@@ -1,0 +1,12 @@
+# intermediete objects
+
+*.o
+*.obj
+*.exe
+*.img
+
+# build folder in general
+/build
+
+# folder for cd image
+/img
