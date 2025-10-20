@@ -21,11 +21,15 @@ typedef u16 char16;
 typedef i8 bool8;
 typedef i32 bool32;
 
-typedef size_t usize;
+typedef uintptr_t usize;
 typedef ptrdiff_t isize;
 
 typedef float f32;
 typedef double f64;
+
+#define global static 
+#define internal static 
+#define local_persist static 
 
 
 #endif

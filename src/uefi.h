@@ -5,7 +5,7 @@
 #define EFI_2_100_SYSTEM_TABLE_REVISION ((2<<16) | (100))
 #define EFI_2_90_SYSTEM_TABLE_REVISION  ((2<<16) | (90))
 #define EFI_2_80_SYSTEM_TABLE_REVISION  ((2<<16) | (80))
-#define EFI_2_70_SYSTEM_TABLE_REVISION  ((2<<16) | (70))
+#define efi_2_70_system_table_revision  ((2<<16) | (70))
 #define EFI_2_60_SYSTEM_TABLE_REVISION  ((2<<16) | (60))
 #define EFI_2_50_SYSTEM_TABLE_REVISION  ((2<<16) | (50))
 #define EFI_2_40_SYSTEM_TABLE_REVISION  ((2<<16) | (40))
@@ -21,7 +21,7 @@
 
 #if defined(__x86_64__) || defined(_M_X64)
 # define EFICALL __attribute__((ms_abi))
-# else
+#else
 # warning "Only x86_64 supported for now!"
 # define EFICALL
 #endif
@@ -40,18 +40,20 @@ typedef usize EfiTPL;
 #define EFI_TPL_NOTIFY         16
 #define EFI_TPL_HIGH_LEVEL     31
 
+typedef struct EfiGuidStruct {
+  u32 data1;
+  u16 data2;
+  u16 data3;
+  u8 data4[8];
+}EfiGuidStruct ;
+
 typedef struct EfiGuid {
   union {
     u8 U8[16];
     u16 U16[8];
     u32 U32[4];
     u64 U64[2];
-    struct {
-      u32 data1;
-      u16 data2;
-      u16 data3;
-      u8 data4[8];
-    };
+    EfiGuidStruct specified;
   };
 } EfiGuid;
 
@@ -435,7 +437,7 @@ typedef struct EfiBootServices {
   EfiStatus (EFICALL *image_unload) (
     EfiHandle imageHandle
   );
-  EfiStatus (EFICALL* exitBootServices) (
+  EfiStatus (EFICALL* exit_boot_services) (
     EfiHandle imageHandle,
     usize mapKey
   );
@@ -552,5 +554,85 @@ typedef struct EfiSystemTable {
   usize numberOfTableEntries;
   EfiConfigurationTable* configurationTable;
 }EfiSystemTable;
+
+// -------------- GOP -----------------
+
+#define EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID \
+ {0x9042a9de,0x23dc,0x4a38,\
+  {0x96,0xfb,0x7a,0xde,0xd0,0x80,0x51,0x6a}}
+
+typedef enum EfiGraphicsPixelFormat {
+  PixelRedGreenBlueReserved8BitPerColor,
+  PixelBlueGreenRedReserved8BitPerColor,
+  PixelBitMask,
+  PixelBltOnly,
+  PixelFormatMax
+}EfiGraphicsPixelFormat;
+
+typedef struct EfiPixelBitmask {
+  u32 redMask;
+  u32 greenMask;
+  u32 blueMask;
+  u32 reservedMask;
+}EfiPixelBitmask;
+
+typedef struct EfiGraphicsOutputModeInformation {
+  u32 version;
+  u32 hotizontalResolution;
+  u32 verticalResolution;
+  i32 pixelFormatEnum;
+  EfiPixelBitmask pixelInformation;
+  u32 pixelsPerScanLine;
+}EfiGraphicsOutputModeInformation;
+
+typedef struct EfiGraphicsOutputBltPixel {
+  u8 blue, green, red, reserved;
+}EfiGraphicsOutputBltPixel;
+
+typedef enum GraphicsOutputBltOperation{
+ EfiBltVideoFill,
+ EfiBltVideoToBltBuffer,
+ EfiBltBufferToVideo,
+ EfiBltVideoToVideo,
+ EfiGraphicsOutputBltOperationMax
+}GraphicsOutputBltOperation;
+
+typedef struct EfiGraphicsOutputProtocolMode {
+  u32 maxMode, mode;
+  EfiGraphicsOutputModeInformation* info;
+  usize sizeOfInfo;
+  EfiPhysicalAddress frameBufferBase;
+  usize frameBufferSize;
+}EfiGraphicsOutputProtocolMode ;
+
+typedef struct EfiGraphicsOutputProtocol EfiGraphicsOutputProtocol ;
+
+typedef struct EfiGraphicsOutputProtocol {
+  EfiStatus (EFICALL *query_mode) (
+    EfiGraphicsOutputProtocol* _this,
+    u32 modeNumber,
+    usize* sizeOfInfo,
+    EfiGraphicsOutputModeInformation** info
+  );
+  EfiStatus (EFICALL *set_mode) (
+    EfiGraphicsOutputProtocol* _this,
+    u32 modeNumber
+  );
+  EfiStatus (EFICALL *blt) (
+    EfiGraphicsOutputProtocol* _this,
+    EfiGraphicsOutputBltPixel* bltBuffer,
+    i32 bltOpreationEnum,
+    usize sourceX,
+    usize sourceY,
+    usize destX,
+    usize destY,
+    usize width,
+    usize height,
+    usize delta
+  );
+  EfiGraphicsOutputProtocolMode* mode;
+}EfiGraphicsOutputProtocol ;
+
+#define EFI_ERROR(status) (status != 0)
 
 #endif
