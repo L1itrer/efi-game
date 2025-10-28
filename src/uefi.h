@@ -31,6 +31,10 @@ typedef void* EfiHandle;
 typedef void* EfiEvent;
 typedef uintptr_t EfiUsize;
 typedef EfiUsize EfiStatus;
+
+#define EFI_SUCCESS 0
+#define EFI_NOT_READY 6
+
 typedef u64 EfiPhysicalAddress;
 typedef u64 EfiVirtualAddress;
 typedef usize EfiTPL;

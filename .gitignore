@@ -5,8 +5,9 @@
 *.exe
 *.img
 
-# build folder in general
+# build folders in general
 /build
+/EFI
 
 # folder for cd image
 /img

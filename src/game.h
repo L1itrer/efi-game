@@ -21,6 +21,9 @@ typedef u16 char16;
 typedef i8 bool8;
 typedef i32 bool32;
 
+#define TRUE 1
+#define FALSE 0
+
 typedef uintptr_t usize;
 typedef ptrdiff_t isize;
 

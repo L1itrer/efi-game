@@ -2,40 +2,93 @@
 
 global EfiSystemTable* Gst;
 
-EfiStatus print(char16* str) {
+#define RESOLUTION_WIDTH (1920 / 2)
+#define RESOLUTION_HEIGHT (1080 / 2)
+
+EfiStatus print(char16* str)
+{
   EfiStatus status;
   status = Gst->conOut->output_string(Gst->conOut, str);
 
   return status;
 }
 
-EfiStatus wait_for_key() {
+EfiStatus wait_for_key()
+{
   usize x;
   return Gst->
     bootServices->
     wait_for_event(1, &Gst->conIn->waitForKey, &x);
 }
 
-EfiStatus disable_watchdog() {
+void print_and_wait(char16* str)
+{
+  print(str);
+  wait_for_key();
+}
+
+EfiStatus disable_watchdog()
+{
   return Gst->bootServices->set_watchdog_timer(0, 0, 0, NULL);
 }
 
-EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st) {
+EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st) 
+{
   EfiStatus status = 0;
   EfiGuid gopGuid;
+  EfiGraphicsOutputProtocol* gop;
+  EfiGraphicsOutputModeInformation* gopInfo;
+  usize sizeOfInfo, modeCount, nativeMode;
   gopGuid.specified = (EfiGuidStruct) EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
   Gst = st;
   status = disable_watchdog();
-  if (EFI_ERROR(status)) {
-    print(L"could not disable watchdog!\r\n");
+
+  status = Gst->bootServices->locate_protocol(&gopGuid, NULL, (void**)&gop);
+  if (EFI_ERROR(status))
+  {
+    print(L"Could not locate GOP!\r\n");
     wait_for_key();
-  } else {
-    print(L"disabled watchdog successfully!\r\n");
+    return status;
+  }
+  status = gop->query_mode(gop, gop->mode == NULL ? 0 : gop->mode->mode, &sizeOfInfo, &gopInfo);
+  if (status == EFI_NOT_READY)
+  {
+    status = gop->set_mode(gop, 0);
+  }
+  if (EFI_ERROR(status))
+  {
+    print(L"Could not get native mode!\r\n");
     wait_for_key();
+    return status;
+  }
+  nativeMode = gop->mode->mode;
+  modeCount = gop->mode->maxMode;
+  bool32 foundMode = FALSE;
+  for (usize i = 0;i < modeCount;++i)
+  {
+    status = gop->query_mode(gop, i, &sizeOfInfo, &gopInfo);
+    u32 hRes = gopInfo->hotizontalResolution;
+    u32 vRes = gopInfo->verticalResolution;
+    i32 format = gopInfo->pixelFormatEnum;
+    if (hRes >= RESOLUTION_HEIGHT && vRes >= RESOLUTION_WIDTH && format == PixelBlueGreenRedReserved8BitPerColor)
+    {
+      gop->set_mode(gop, i);
+      foundMode = TRUE;
+      break;
+    }
+  }
+  if (foundMode)
+  {
+    print_and_wait(L"found suitable mode!\r\n");
+  }
+  else
+  {
+    print_and_wait(L"could not find suitable mode!\r\n");
   }
 
+
   return status;
-};
+}
 
 // for testing of types etc
 #ifdef EFI_TEST
