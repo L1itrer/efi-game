@@ -32,16 +32,45 @@ EfiStatus disable_watchdog()
   return Gst->bootServices->set_watchdog_timer(0, 0, 0, NULL);
 }
 
+void print_hex(u64 value)
+{
+  // TODO: finish this procedure
+  const char16* array = L"0123456789ABCDEF";
+  char16 buffer[1024] = {0};
+  u64 digit;
+  while (value != 0)
+  {
+    digit = value / 16;
+  }
+}
+
 EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st) 
 {
   EfiStatus status = 0;
-  EfiGuid gopGuid;
+  EfiGuid gopGuid, loadedImageGuid;
   EfiGraphicsOutputProtocol* gop;
   EfiGraphicsOutputModeInformation* gopInfo;
+  EfiLoadedImageProtocol* loadedImage;
   usize sizeOfInfo, modeCount, nativeMode;
   gopGuid.specified = (EfiGuidStruct) EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+  loadedImageGuid.specified = (EfiGuidStruct) EFI_LOADED_IMAGE_PROTOCOL_GUID;
   Gst = st;
   status = disable_watchdog();
+
+  status = Gst->bootServices->locate_protocol(&loadedImageGuid, NULL, (void**)&loadedImage);
+  if (EFI_ERROR(status))
+  {
+    print_and_wait(L"Could not locate loadedImage\r\n");
+    return status;
+  }
+
+  volatile u64* marker_ptr = (u64*)0x10000;
+  volatile u64* image_base_ptr = (u64*)0x10008;
+  volatile bool32 debug_loop = 1;
+  *image_base_ptr = (u64)loadedImage->imageBase;
+  *marker_ptr = 0xDEADBEEF;
+  while (debug_loop) {}
+
 
   status = Gst->bootServices->locate_protocol(&gopGuid, NULL, (void**)&gop);
   if (EFI_ERROR(status))
