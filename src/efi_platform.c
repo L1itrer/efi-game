@@ -32,7 +32,7 @@ EfiStatus disable_watchdog()
   return Gst->bootServices->set_watchdog_timer(0, 0, 0, NULL);
 }
 
-void print_hex(u64 value)
+/*void print_hex(u64 value)
 {
   // TODO: finish this procedure
   const char16* array = L"0123456789ABCDEF";
@@ -42,7 +42,7 @@ void print_hex(u64 value)
   {
     digit = value / 16;
   }
-}
+}*/
 
 EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st) 
 {
@@ -51,7 +51,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   EfiGraphicsOutputProtocol* gop;
   EfiGraphicsOutputModeInformation* gopInfo;
   EfiLoadedImageProtocol* loadedImage;
-  usize sizeOfInfo, modeCount, nativeMode;
+  usize sizeOfInfo, modeCount;
   gopGuid.specified = (EfiGuidStruct) EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
   loadedImageGuid.specified = (EfiGuidStruct) EFI_LOADED_IMAGE_PROTOCOL_GUID;
   Gst = st;
@@ -66,10 +66,8 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
 
   volatile u64* marker_ptr = (u64*)0x10000;
   volatile u64* image_base_ptr = (u64*)0x10008;
-  volatile bool32 debug_loop = 1;
   *image_base_ptr = (u64)loadedImage->imageBase;
   *marker_ptr = 0xDEADBEEF;
-  while (debug_loop) {}
 
 
   status = Gst->bootServices->locate_protocol(&gopGuid, NULL, (void**)&gop);
@@ -90,7 +88,6 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     wait_for_key();
     return status;
   }
-  nativeMode = gop->mode->mode;
   modeCount = gop->mode->maxMode;
   bool32 foundMode = FALSE;
   for (usize i = 0;i < modeCount;++i)
