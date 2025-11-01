@@ -1,4 +1,4 @@
-#include "uefi.h"
+#include "efi.h"
 
 global EfiSystemTable* Gst;
 
@@ -131,6 +131,14 @@ int main() {
     printf("%x, ", gopGuid.specified.data4[i]);
   }
   printf("\n");
+  return 0;
+}
+#endif
+
+#ifdef POSIX_EFI_DEBUG
+int main(int argc, char** argv)
+{
+  efi_main();
   return 0;
 }
 #endif
