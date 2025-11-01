@@ -134,11 +134,3 @@ int main() {
   return 0;
 }
 #endif
-
-#ifdef POSIX_EFI_DEBUG
-int main(int argc, char** argv)
-{
-  efi_main();
-  return 0;
-}
-#endif
