@@ -16,7 +16,7 @@ void cflags(Cmd* cmd, bool warnings)
   cmd_append(cmd, "-ffreestanding");
   cmd_append(cmd, "-fno-stack-protector");
   cmd_append(cmd, "-fno-stack-check");
-  cmd_append(cmd, "-ggdb");
+  cmd_append(cmd, "-g");
   cmd_append(cmd, "-mno-red-zone");
   // cmd_append(cmd, "-maccumulate-outgoing-args");
   cmd_append(cmd, "-fshort-wchar");
@@ -154,13 +154,11 @@ int main(int argc, char** argv)
   Cmd cmd_static = {0};
   Procs procs = {0};
   Cmd* cmd = &cmd_static;
-  mkdir_if_not_exists(BUILD_DIR);
-
-  
-  // build_debug(cmd);
+  if (!mkdir_if_not_exists(BUILD_DIR)) return 1;
 
   compiler(cmd);
   cflags(cmd, true);
+  cmd_append(cmd, "-O2");
   cmd_append(cmd, "./src/efi_platform.c");
   cmd_append(cmd, "-o");
   cmd_append(cmd, BUILD_DIR "/" EFI_EXE);

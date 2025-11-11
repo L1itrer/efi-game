@@ -2,8 +2,8 @@
 
 global EfiSystemTable* Gst;
 
-#define RESOLUTION_WIDTH (1920 / 2)
-#define RESOLUTION_HEIGHT (1080 / 2)
+#define HORIZONTAL_RESOLUTION (1920 / 2)
+#define VERTICAL_RESOLUTION (1080 / 2)
 
 EfiStatus print(char16* str)
 {
@@ -44,30 +44,54 @@ EfiStatus disable_watchdog()
   }
 }*/
 
+typedef struct Backbuffer {
+  void* buffer;
+  u32 pixelsPerLine;
+  u32 lineCount;
+  u32 pitch; // how many pixels to advance to new line
+  u32 bytesPerPixel;
+}Backbuffer;
+
+void memoryset(void* buffer, u8 value, usize count)
+{
+  u8* buf = buffer;
+  for (usize i = 0; i < count;++i)
+  {
+    buf[i] = value;
+  }
+}
+
+void fill_backbuffer(Backbuffer backbuffer)
+{
+  u8* line = backbuffer.buffer;
+  for (u32 y = 0;y < backbuffer.lineCount;++y)
+  {
+    u8* pixelByte = line;
+    for (u32 x = 0;x < backbuffer.pixelsPerLine;++x)
+    {
+      EfiGraphicsOutputBltPixel* pixel = (EfiGraphicsOutputBltPixel*)pixelByte;
+      // fill the color
+      pixel->blue = 128;
+      pixel->green = 128;
+      pixel->red = 255;
+      pixelByte += backbuffer.bytesPerPixel;
+    }
+    line += backbuffer.pitch;
+  }
+}
+
 EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st) 
 {
+  EfiGraphicsOutputBltPixel *frontbuffer, *temp;
+  Backbuffer backbuffer;
   EfiStatus status = 0;
-  EfiGuid gopGuid, loadedImageGuid;
+  EfiGuid gopGuid;
   EfiGraphicsOutputProtocol* gop;
   EfiGraphicsOutputModeInformation* gopInfo;
-  EfiLoadedImageProtocol* loadedImage;
   usize sizeOfInfo, modeCount;
   gopGuid.specified = (EfiGuidStruct) EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
-  loadedImageGuid.specified = (EfiGuidStruct) EFI_LOADED_IMAGE_PROTOCOL_GUID;
   Gst = st;
   status = disable_watchdog();
-
-  status = Gst->bootServices->locate_protocol(&loadedImageGuid, NULL, (void**)&loadedImage);
-  if (EFI_ERROR(status))
-  {
-    print_and_wait(L"Could not locate loadedImage\r\n");
-    return status;
-  }
-
-  volatile u64* marker_ptr = (u64*)0x10000;
-  volatile u64* image_base_ptr = (u64*)0x10008;
-  *image_base_ptr = (u64)loadedImage->imageBase;
-  *marker_ptr = 0xDEADBEEF;
 
 
   status = Gst->bootServices->locate_protocol(&gopGuid, NULL, (void**)&gop);
@@ -96,21 +120,36 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     u32 hRes = gopInfo->hotizontalResolution;
     u32 vRes = gopInfo->verticalResolution;
     i32 format = gopInfo->pixelFormatEnum;
-    if (hRes >= RESOLUTION_HEIGHT && vRes >= RESOLUTION_WIDTH && format == PixelBlueGreenRedReserved8BitPerColor)
+    if ((vRes >= VERTICAL_RESOLUTION) && (hRes >= HORIZONTAL_RESOLUTION) && (format == PixelBlueGreenRedReserved8BitPerColor))
     {
       gop->set_mode(gop, i);
       foundMode = TRUE;
       break;
     }
   }
-  if (foundMode)
-  {
-    print_and_wait(L"found suitable mode!\r\n");
-  }
-  else
+  if (!foundMode)
   {
     print_and_wait(L"could not find suitable mode!\r\n");
+    return status;
   }
+  backbuffer.bytesPerPixel = 4;
+  backbuffer.pixelsPerLine = HORIZONTAL_RESOLUTION;
+  backbuffer.pitch = backbuffer.bytesPerPixel * HORIZONTAL_RESOLUTION;
+  backbuffer.lineCount = VERTICAL_RESOLUTION;
+  u32 bytesPerBuffer = backbuffer.bytesPerPixel * backbuffer.lineCount * backbuffer.bytesPerPixel;
+  status = Gst->bootServices->allocate_pool(EfiBootServicesData, bytesPerBuffer*2, (void**)&frontbuffer);
+  if (EFI_ERROR(status))
+  {
+    print_and_wait(L"Could not allocate memory for the frontbuffer and backbuffer\r\n");
+    return status;
+  }
+  memoryset(backbuffer.buffer, 0, bytesPerBuffer);
+  fill_backbuffer(backbuffer);
+  temp = backbuffer.buffer;
+  backbuffer.buffer = frontbuffer;
+  frontbuffer = temp;
+  status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, 0);
+  wait_for_key();
 
 
   return status;
