@@ -1,4 +1,9 @@
 #include "efi.h"
+#define ERR_CODE(en, str) str,
+char16* efiErrorCodeStrs[] = {
+  ERROR_CODES
+};
+#undef ERR_CODE
 
 global EfiSystemTable* Gst;
 
@@ -24,6 +29,17 @@ EfiStatus wait_for_key()
 void print_and_wait(char16* str)
 {
   print(str);
+  print(L"(press any key)\r\n");
+  wait_for_key();
+}
+
+void print_error_wait(char16* str, EfiStatus errCode)
+{
+  print(str);
+  print(L"Error code:");
+  print(efiErrorCodeStrs[errCode]);
+  print(L"\r\n");
+  print(L"(press any key)\r\n");
   wait_for_key();
 }
 
@@ -97,8 +113,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   status = Gst->bootServices->locate_protocol(&gopGuid, NULL, (void**)&gop);
   if (EFI_ERROR(status))
   {
-    print(L"Could not locate GOP!\r\n");
-    wait_for_key();
+    print_and_wait(L"Could not locate GOP!\r\n");
     return status;
   }
   status = gop->query_mode(gop, gop->mode == NULL ? 0 : gop->mode->mode, &sizeOfInfo, &gopInfo);
@@ -108,8 +123,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   }
   if (EFI_ERROR(status))
   {
-    print(L"Could not get native mode!\r\n");
-    wait_for_key();
+    print_and_wait(L"Could not get native mode!\r\n");
     return status;
   }
   modeCount = gop->mode->maxMode;
@@ -136,13 +150,14 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   backbuffer.pixelsPerLine = HORIZONTAL_RESOLUTION;
   backbuffer.pitch = backbuffer.bytesPerPixel * HORIZONTAL_RESOLUTION;
   backbuffer.lineCount = VERTICAL_RESOLUTION;
-  u32 bytesPerBuffer = backbuffer.bytesPerPixel * backbuffer.lineCount * backbuffer.bytesPerPixel;
+  u32 bytesPerBuffer = backbuffer.bytesPerPixel * backbuffer.lineCount * backbuffer.pixelsPerLine;
   status = Gst->bootServices->allocate_pool(EfiBootServicesData, bytesPerBuffer*2, (void**)&frontbuffer);
   if (EFI_ERROR(status))
   {
-    print_and_wait(L"Could not allocate memory for the frontbuffer and backbuffer\r\n");
+    print_error_wait(L"Could not allocate memory for the frontbuffer and backbuffer\r\n", status);
     return status;
   }
+  backbuffer.buffer = (u8*)frontbuffer + bytesPerBuffer;
   memoryset(backbuffer.buffer, 0, bytesPerBuffer);
   fill_backbuffer(backbuffer);
   temp = backbuffer.buffer;
