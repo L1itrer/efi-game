@@ -1,6 +1,7 @@
 #define NOB_IMPLEMENTATION
 #define NOB_EXPERIMENTAL_DELETE_OLD
 #define NOB_STRIP_PREFIX
+#define NOB_NO_ECHO
 #include "./src/thirdparty/nob/nob.h"
 
 #define BUILD_DIR "./build"
@@ -31,6 +32,7 @@ void posix_efi_flags(Cmd* cmd)
   cmd_append(cmd, "-I./usr/include/efi");
   cmd_append(cmd, "-I./usr/include/efi/protocol");
   cmd_append(cmd, "-I./usr/include/efi/x86_64");
+  cmd_append(cmd, "-I./src/thirdparty/stb/");
   cmd_append(cmd, "-D__x86_64__");
   cmd_append(cmd, "-Wno-builtin-declaration-mismatch");
 }
@@ -158,10 +160,11 @@ int main(int argc, char** argv)
 
   compiler(cmd);
   cflags(cmd, true);
-  cmd_append(cmd, "-O2");
+  cmd_append(cmd, "-O0");
   cmd_append(cmd, "./src/efi_platform.c");
   cmd_append(cmd, "-o");
   cmd_append(cmd, BUILD_DIR "/" EFI_EXE);
+  cmd_append(cmd, "-I./src/thirdparty/stb/");
   ldflags(cmd);
 
   if (!cmd_run(cmd, .async = &procs)) return 1;

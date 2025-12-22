@@ -22,11 +22,11 @@
 #if defined(__x86_64__) || defined(_M_X64)
 # define EFICALL __attribute__((ms_abi))
 #else
-# warning "Only x86_64 supported for now!"
+# error "Only x86_64 supported for now!"
 # define EFICALL
 #endif
 
-#define ERROR_CODES \
+#define ERROR_CODES_WCHAR \
 ERR_CODE(EFI_SUCCESS, L"Success") \
 ERR_CODE(EFI_LOAD_ERROR, L"The image failed to load.") \
 ERR_CODE(EFI_INVALID_PARAMETER, L"A parameter was incorrect.") \
@@ -61,6 +61,44 @@ ERR_CODE(EFI_INVALID_LANGUAGE, L"The language specified was invalid.") \
 ERR_CODE(EFI_COMPROMISED_DATA, L"The security status of the data is unknown or compromised and the data must be updated or replaced to restore a valid security status.") \
 ERR_CODE(EFI_IP_ADDRESS_CONFLICT, L"There is an address conflict address allocation") \
 ERR_CODE(EFI_HTTP_ERROR, L"A HTTP error occurred during the network operation.") \
+
+
+
+#define ERROR_CODES \
+ERR_CODE(EFI_SUCCESS, "Success") \
+ERR_CODE(EFI_LOAD_ERROR, "The image failed to load.") \
+ERR_CODE(EFI_INVALID_PARAMETER, "A parameter was incorrect.") \
+ERR_CODE(EFI_UNSUPPORTED, "The operation is not supported.") \
+ERR_CODE(EFI_BAD_BUFFER_SIZE, "The buffer was not the proper size for the request.") \
+ERR_CODE(EFI_BUFFER_TOO_SMALL, "The buffer is not large enough to hold the requested data. The required buffer size is returned in the appropriate parameter when this error occurs.") \
+ERR_CODE(EFI_NOT_READY, "There is no data pending upon return.") \
+ERR_CODE(EFI_DEVICE_ERROR, "The physical device reported an error while attempting the operation.") \
+ERR_CODE(EFI_WRITE_PROTECTED, "The device cannot be written to.") \
+ERR_CODE(EFI_OUT_OF_RESOURCES, "A resource has run out.") \
+ERR_CODE(EFI_VOLUME_CORRUPTED, "An inconstancy was detected on the file system causing the operating to fail.") \
+ERR_CODE(EFI_VOLUME_FULL, "There is no more space on the file system.") \
+ERR_CODE(EFI_NO_MEDIA, "The device does not contain any medium to perform the operation.") \
+ERR_CODE(EFI_MEDIA_CHANGED, "The medium in the device has changed since the last access.") \
+ERR_CODE(EFI_NOT_FOUND, "The item was not found.") \
+ERR_CODE(EFI_ACCESS_DENIED, "Access was denied.") \
+ERR_CODE(EFI_NO_RESPONSE, "The server was not found or did not respond to the request.") \
+ERR_CODE(EFI_NO_MAPPING, "A mapping to a device does not exist.") \
+ERR_CODE(EFI_TIMEOUT, "The timeout time expired.") \
+ERR_CODE(EFI_NOT_STARTED, "The protocol has not been started.") \
+ERR_CODE(EFI_ALREADY_STARTED, "The protocol has already been started.") \
+ERR_CODE(EFI_ABORTED, "The operation was aborted.") \
+ERR_CODE(EFI_ICMP_ERROR, "An ICMP error occurred during the network operation.") \
+ERR_CODE(EFI_TFTP_ERROR, "A TFTP error occurred during the network operation.") \
+ERR_CODE(EFI_PROTOCOL_ERROR, "A protocol error occurred during the network operation.") \
+ERR_CODE(EFI_INCOMPATIBLE_VERSION, "The function encountered an internal version that was incompatible with a version requested by the caller.") \
+ERR_CODE(EFI_SECURITY_VIOLATION, "The function was not performed due to a security violation.") \
+ERR_CODE(EFI_CRC_ERROR, "A CRC error was detected.") \
+ERR_CODE(EFI_END_OF_MEDIA, "Beginning or end of media was reached") \
+ERR_CODE(EFI_END_OF_FILE, "The end of the file was reached.") \
+ERR_CODE(EFI_INVALID_LANGUAGE, "The language specified was invalid.") \
+ERR_CODE(EFI_COMPROMISED_DATA, "The security status of the data is unknown or compromised and the data must be updated or replaced to restore a valid security status.") \
+ERR_CODE(EFI_IP_ADDRESS_CONFLICT, "There is an address conflict address allocation") \
+ERR_CODE(EFI_HTTP_ERROR, "A HTTP error occurred during the network operation.") \
 
 #define ERR_CODE(en, str) en,
 typedef enum EfiErrorCodes {

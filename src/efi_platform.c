@@ -1,6 +1,20 @@
 #include "efi.h"
+
+#ifndef STB_SPRINTF_IMPLEMENTATION
+#  define STB_SPRINTF_IMPLEMENTATION
+#endif
+int _fltused = 0x9875;
+#include "thirdparty/stb/stb_sprintf.h"
+
 #define ERR_CODE(en, str) str,
-char16* efiErrorCodeStrs[] = {
+char16* efiErrorCodeStrsWchar[] = {
+  ERROR_CODES_WCHAR
+};
+#undef ERR_CODE
+
+
+#define ERR_CODE(en, str) str,
+char* efiErrorCodeStrs[] = {
   ERROR_CODES
 };
 #undef ERR_CODE
@@ -55,6 +69,19 @@ void write_serial(char a)
   outb(PORT,a);
 }
 
+void debug_printf(const char* fmt, ...)
+{
+  char buffer[1024] = {0};
+  va_list va;
+  va_start(va, fmt);
+  int count = stbsp_vsnprintf(buffer, 1024, fmt, va);
+  va_end(va);
+  for (int i = 0;i < count;++i)
+  {
+    write_serial(buffer[i]);
+  }
+}
+
 EfiStatus print(char16* str)
 {
   EfiStatus status;
@@ -82,7 +109,7 @@ void print_error_wait(char16* str, EfiStatus errCode)
 {
   print(str);
   print(L"Error code:");
-  print(efiErrorCodeStrs[errCode]);
+  print(efiErrorCodeStrsWchar[errCode]);
   print(L"\r\n");
   print(L"(press any key)\r\n");
   wait_for_key();
@@ -113,13 +140,15 @@ typedef struct Backbuffer {
   u32 bytesPerPixel;
 }Backbuffer;
 
-void memoryset(void* buffer, u8 value, usize count)
+int memset(void* buffer, int value, size_t count)
 {
   u8* buf = buffer;
-  for (usize i = 0; i < count;++i)
+  usize i = 0;
+  for (; i < count;++i)
   {
     buf[i] = value;
   }
+  return (int)i;
 }
 
 void fill_backbuffer(Backbuffer backbuffer)
@@ -164,13 +193,16 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     write_serial('m');
     write_serial('o');
     write_serial('m');
+    write_serial('\n');
+    debug_printf("urmom! %d\n", 69);
   }
 
 
   status = Gst->bootServices->locate_protocol(&gopGuid, NULL, (void**)&gop);
   if (EFI_ERROR(status))
   {
-    print_and_wait(L"Could not locate GOP!\r\n");
+    //print_and_wait(L"Could not locate GOP!\r\n");
+    debug_printf("Could not locate GOP!: %s\n", efiErrorCodeStrs[status]);
     return status;
   }
   status = gop->query_mode(gop, gop->mode == NULL ? 0 : gop->mode->mode, &sizeOfInfo, &gopInfo);
@@ -180,7 +212,8 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   }
   if (EFI_ERROR(status))
   {
-    print_and_wait(L"Could not get native mode!\r\n");
+    //print_and_wait(L"Could not get native mode!\r\n");
+    debug_printf("Could not get native mode: %s\n", efiErrorCodeStrs[status]);
     return status;
   }
   modeCount = gop->mode->maxMode;
@@ -200,7 +233,8 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   }
   if (!foundMode)
   {
-    print_and_wait(L"could not find suitable mode!\r\n");
+    //print_and_wait(L"could not find suitable mode!\r\n");
+    debug_printf("Could not find suitable mode!\n");
     return status;
   }
   backbuffer.bytesPerPixel = 4;
@@ -211,18 +245,29 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   status = Gst->bootServices->allocate_pool(EfiBootServicesData, bytesPerBuffer*2, (void**)&frontbuffer);
   if (EFI_ERROR(status))
   {
-    print_error_wait(L"Could not allocate memory for the frontbuffer and backbuffer\r\n", status);
+    //print_error_wait(L"Could not allocate memory for the frontbuffer and backbuffer\r\n", status);
+    debug_printf("Could not allocate memory for the front and backbuffer: %s\n", efiErrorCodeStrs[status]);
     return status;
   }
+  debug_printf("Initialization complete\n");
+  u64 i = 0;
   for (;;)
   {
+    debug_printf("On iteration %llu was still alive\n", i);
     backbuffer.buffer = (u8*)frontbuffer + bytesPerBuffer;
-    memoryset(backbuffer.buffer, 0, bytesPerBuffer);
+    debug_printf("1\n");
+    memset(backbuffer.buffer, 0, bytesPerBuffer);
+    debug_printf("2\n");
     fill_backbuffer(backbuffer);
+    debug_printf("3\n");
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;
     status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, 0);
+    debug_printf("4\n");
+    i += 1;
+    Gst->bootServices->stall(8000);
+    debug_printf("5\n");
   }
   wait_for_key();
 
