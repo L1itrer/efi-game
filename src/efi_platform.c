@@ -10,6 +10,51 @@ global EfiSystemTable* Gst;
 #define HORIZONTAL_RESOLUTION (1920 / 2)
 #define VERTICAL_RESOLUTION (1080 / 2)
 
+internal inline void outb(u16 port, u8 data)
+{
+  __asm__ __volatile__("outb %1, %0" : : "dN" (port), "a" (data));
+}
+
+internal inline u8 inb(u16 port)
+{
+  u8 r;
+  __asm__ __volatile__("inb %1, %0" : "=a" (r) : "dN" (port));
+  return r;
+}
+
+// NOTE: shamelessly copied from https://wiki.osdev.org/Serial_Ports#Example_Code
+#define PORT 0x3f8
+internal int init_serial()
+{
+  outb(PORT + 1, 0x00); // disables all interrupts
+  outb(PORT + 3, 0x80); // enables dlab whathever it is
+  outb(PORT + 0, 0x03); // sets divisor to 3 or something
+  outb(PORT + 1, 0x00); // same as above but hi byte
+  outb(PORT + 3, 0x03);
+  outb(PORT + 2, 0xC7);
+  outb(PORT + 4, 0x0B);
+  outb(PORT + 4, 0x1E);
+  #define SERIAL_TEST_BYTE 0xAE
+  outb(PORT + 0, SERIAL_TEST_BYTE);
+  if (inb(PORT+0) != SERIAL_TEST_BYTE)
+  {
+    return 1;
+  }
+  outb(PORT + 4, 0x0F);
+  return 0;
+}
+
+int is_transmit_empty()
+{
+  return inb(PORT + 5) & 0x20;
+}
+
+void write_serial(char a) 
+{
+  while (is_transmit_empty() == 0);
+  outb(PORT,a);
+}
+
 EfiStatus print(char16* str)
 {
   EfiStatus status;
@@ -96,6 +141,9 @@ void fill_backbuffer(Backbuffer backbuffer)
   }
 }
 
+// make clang shut up about unused image handle
+global EfiHandle gImageHandle;
+
 EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st) 
 {
   EfiGraphicsOutputBltPixel *frontbuffer, *temp;
@@ -105,9 +153,18 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   EfiGraphicsOutputProtocol* gop;
   EfiGraphicsOutputModeInformation* gopInfo;
   usize sizeOfInfo, modeCount;
+  gImageHandle = imageHandle;
   gopGuid.specified = (EfiGuidStruct) EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
   Gst = st;
   status = disable_watchdog();
+  if (init_serial() == 0)
+  {
+    write_serial('u');
+    write_serial('r');
+    write_serial('m');
+    write_serial('o');
+    write_serial('m');
+  }
 
 
   status = Gst->bootServices->locate_protocol(&gopGuid, NULL, (void**)&gop);
@@ -157,13 +214,16 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     print_error_wait(L"Could not allocate memory for the frontbuffer and backbuffer\r\n", status);
     return status;
   }
-  backbuffer.buffer = (u8*)frontbuffer + bytesPerBuffer;
-  memoryset(backbuffer.buffer, 0, bytesPerBuffer);
-  fill_backbuffer(backbuffer);
-  temp = backbuffer.buffer;
-  backbuffer.buffer = frontbuffer;
-  frontbuffer = temp;
-  status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, 0);
+  for (;;)
+  {
+    backbuffer.buffer = (u8*)frontbuffer + bytesPerBuffer;
+    memoryset(backbuffer.buffer, 0, bytesPerBuffer);
+    fill_backbuffer(backbuffer);
+    temp = backbuffer.buffer;
+    backbuffer.buffer = frontbuffer;
+    frontbuffer = temp;
+    status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, 0);
+  }
   wait_for_key();
 
 
