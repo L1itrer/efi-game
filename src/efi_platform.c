@@ -1,10 +1,15 @@
 #include "efi.h"
 
-#ifndef STB_SPRINTF_IMPLEMENTATION
-#  define STB_SPRINTF_IMPLEMENTATION
-#endif
+#ifdef RELEASE
+#  else
+#  ifndef STB_SPRINTF_IMPLEMENTATION
+#    define STB_SPRINTF_IMPLEMENTATION
+#  endif
+// magic variable required by nonexistent crt
 int _fltused = 0x9875;
 #include "thirdparty/stb/stb_sprintf.h"
+#endif
+#include "game.c"
 
 #define ERR_CODE(en, str) str,
 char16* efiErrorCodeStrsWchar[] = {
@@ -58,19 +63,21 @@ internal int init_serial()
   return 0;
 }
 
-int is_transmit_empty()
+internal int is_transmit_empty()
 {
   return inb(PORT + 5) & 0x20;
 }
 
-void write_serial(char a) 
+internal void write_serial(char a) 
 {
   while (is_transmit_empty() == 0);
   outb(PORT,a);
 }
 
-void debug_printf(const char* fmt, ...)
+internal void debug_printf(const char* fmt, ...)
 {
+#ifdef RELEASE
+#else
   char buffer[1024] = {0};
   va_list va;
   va_start(va, fmt);
@@ -80,9 +87,10 @@ void debug_printf(const char* fmt, ...)
   {
     write_serial(buffer[i]);
   }
+#endif
 }
 
-EfiStatus print(char16* str)
+internal EfiStatus print(char16* str)
 {
   EfiStatus status;
   status = Gst->conOut->output_string(Gst->conOut, str);
@@ -90,7 +98,7 @@ EfiStatus print(char16* str)
   return status;
 }
 
-EfiStatus wait_for_key()
+internal EfiStatus wait_for_key()
 {
   usize x;
   return Gst->
@@ -115,60 +123,32 @@ void print_error_wait(char16* str, EfiStatus errCode)
   wait_for_key();
 }
 
-EfiStatus disable_watchdog()
+internal EfiStatus disable_watchdog()
 {
   return Gst->bootServices->set_watchdog_timer(0, 0, 0, NULL);
 }
 
-/*void print_hex(u64 value)
-{
-  // TODO: finish this procedure
-  const char16* array = L"0123456789ABCDEF";
-  char16 buffer[1024] = {0};
-  u64 digit;
-  while (value != 0)
-  {
-    digit = value / 16;
-  }
-}*/
 
-typedef struct Backbuffer {
-  void* buffer;
-  u32 pixelsPerLine;
-  u32 lineCount;
-  u32 pitch; // how many pixels to advance to new line
-  u32 bytesPerPixel;
-}Backbuffer;
-
-int memset(void* buffer, int value, size_t count)
+void* memset(void* dest, int value, size_t count)
 {
-  u8* buf = buffer;
+  u8* buf = dest;
   usize i = 0;
   for (; i < count;++i)
   {
     buf[i] = (u8)value;
   }
-  return (int)i;
+  return dest;
 }
 
-void fill_backbuffer(Backbuffer backbuffer)
+void *memcpy(void *dest, const void *src, size_t n)
 {
-  u8* line = backbuffer.buffer;
-  for (u32 y = 0;y < backbuffer.lineCount;++y)
+  for (size_t i = 0; i < n; i++)
   {
-    u8* pixelByte = line;
-    for (u32 x = 0;x < backbuffer.pixelsPerLine;++x)
-    {
-      EfiGraphicsOutputBltPixel* pixel = (EfiGraphicsOutputBltPixel*)pixelByte;
-      // fill the color
-      pixel->blue = 128;
-      pixel->green = 128;
-      pixel->red = 255;
-      pixelByte += backbuffer.bytesPerPixel;
-    }
-    line += backbuffer.pitch;
+    ((char*)dest)[i] = ((char*)src)[i];
   }
+  return dest;
 }
+
 
 // make clang shut up about unused image handle
 global EfiHandle gImageHandle;
@@ -188,20 +168,13 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   status = disable_watchdog();
   if (init_serial() == 0)
   {
-    write_serial('u');
-    write_serial('r');
-    write_serial('m');
-    write_serial('o');
-    write_serial('m');
-    write_serial('\n');
-    debug_printf("urmom! %d\n", 69);
+    debug_printf("Serial works, can do printf debugging...!\n");
   }
 
 
   status = Gst->bootServices->locate_protocol(&gopGuid, NULL, (void**)&gop);
   if (EFI_ERROR(status))
   {
-    //print_and_wait(L"Could not locate GOP!\r\n");
     debug_printf("Could not locate GOP!: %s\n", efiErrorCodeStrs[status]);
     return status;
   }
@@ -212,7 +185,6 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   }
   if (EFI_ERROR(status))
   {
-    //print_and_wait(L"Could not get native mode!\r\n");
     debug_printf("Could not get native mode: %s\n", efiErrorCodeStrs[status]);
     return status;
   }
@@ -233,7 +205,6 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   }
   if (!foundMode)
   {
-    //print_and_wait(L"could not find suitable mode!\r\n");
     debug_printf("Could not find suitable mode!\n");
     return status;
   }
@@ -241,11 +212,14 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   backbuffer.pixelsPerLine = HORIZONTAL_RESOLUTION;
   backbuffer.pitch = backbuffer.bytesPerPixel * HORIZONTAL_RESOLUTION;
   backbuffer.lineCount = VERTICAL_RESOLUTION;
+  backbuffer.blueShift  = 0;
+  backbuffer.greenShift = 8;
+  backbuffer.redShift   = 16;
+  backbuffer.alphaShift = 24;
   u32 bytesPerBuffer = backbuffer.bytesPerPixel * backbuffer.lineCount * backbuffer.pixelsPerLine;
   status = Gst->bootServices->allocate_pool(EfiBootServicesData, bytesPerBuffer*2, (void**)&frontbuffer);
   if (EFI_ERROR(status))
   {
-    //print_error_wait(L"Could not allocate memory for the frontbuffer and backbuffer\r\n", status);
     debug_printf("Could not allocate memory for the front and backbuffer: %s\n", efiErrorCodeStrs[status]);
     return status;
   }
@@ -254,7 +228,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   for (;;)
   {
     memset(backbuffer.buffer, 0, bytesPerBuffer);
-    fill_backbuffer(backbuffer);
+    game_update_render(backbuffer);
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;

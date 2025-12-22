@@ -34,5 +34,19 @@ typedef double f64;
 #define internal static 
 #define local_persist static 
 
+typedef struct Backbuffer {
+  void* buffer;
+  u32 pixelsPerLine;
+  u32 lineCount;
+  u32 pitch; // how many pixels to advance to new line
+  u32 bytesPerPixel;
+  u32 redShift;
+  u32 blueShift;
+  u32 greenShift;
+  u32 alphaShift;
+}Backbuffer;
+
+
+void fill_backbuffer(Backbuffer backbuffer);
 
 #endif

@@ -1,7 +1,7 @@
 #define NOB_IMPLEMENTATION
 #define NOB_EXPERIMENTAL_DELETE_OLD
 #define NOB_STRIP_PREFIX
-#define NOB_NO_ECHO
+//#define NOB_NO_ECHO
 #include "./src/thirdparty/nob/nob.h"
 
 #define BUILD_DIR "./build"
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
 
   if (!cmd_run(cmd, .async = &procs)) return 1;
 
-  build_debug(cmd);
+  //build_debug(cmd);
 
   procs_wait(procs);
 
