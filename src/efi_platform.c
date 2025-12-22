@@ -146,7 +146,7 @@ int memset(void* buffer, int value, size_t count)
   usize i = 0;
   for (; i < count;++i)
   {
-    buf[i] = value;
+    buf[i] = (u8)value;
   }
   return (int)i;
 }
@@ -250,24 +250,16 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     return status;
   }
   debug_printf("Initialization complete\n");
-  u64 i = 0;
+  backbuffer.buffer = (u8*)frontbuffer + bytesPerBuffer;
   for (;;)
   {
-    debug_printf("On iteration %llu was still alive\n", i);
-    backbuffer.buffer = (u8*)frontbuffer + bytesPerBuffer;
-    debug_printf("1\n");
     memset(backbuffer.buffer, 0, bytesPerBuffer);
-    debug_printf("2\n");
     fill_backbuffer(backbuffer);
-    debug_printf("3\n");
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;
     status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, 0);
-    debug_printf("4\n");
-    i += 1;
     Gst->bootServices->stall(8000);
-    debug_printf("5\n");
   }
   wait_for_key();
 
