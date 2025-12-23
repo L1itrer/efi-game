@@ -274,7 +274,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     memset(backbuffer.buffer, 0, bytesPerBuffer);
     keyboard = efi_poll_keyboard();
     if (keyboard.key[KEY_CHAR_Q]) break;
-    game_update_render(backbuffer, keyboard, procs, &permaMemory, &tempMemory);
+    game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory);
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;

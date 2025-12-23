@@ -94,7 +94,8 @@ typedef struct Memory{
 }Memory;
 
 void fill_backbuffer(Backbuffer backbuffer);
-void game_update_render(Backbuffer backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory);
+void game_update_render(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory);
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a);
+void clear_background(Backbuffer* backbuffer, u8 r, u8 g, u8 b);
 
 #endif

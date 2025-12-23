@@ -7,8 +7,14 @@ typedef struct GameState{
 }GameState;
 
 
-void game_update_render(Backbuffer backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory)
+void game_update_render(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory)
 {
+  if (sizeof(GameState) > permanentMemory->size)
+  {
+    // TODO: panic
+    procs.debug_printf("Exceeded the permanent memory limit!\n");
+    return;
+  }
   GameState* gameState = (GameState*)permanentMemory->data;
   if (!gameState->initialized)
   {
@@ -33,8 +39,8 @@ void game_update_render(Backbuffer backbuffer, Keyboard keyboard, PlatformProcs 
   {
     gameState->playerY += 1;
   }
-  fill_backbuffer(backbuffer);
-  draw_rectangle(&backbuffer, gameState->playerX * 100, gameState->playerY * 100, 100, 100, 0xff, 0, 0, 0xff);
+  clear_background(backbuffer, 0x18, 0x18, 0x18);
+  draw_rectangle(backbuffer, gameState->playerX * 100, gameState->playerY * 100, 100, 100, 0xff, 0, 0, 0xff);
 }
 
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a)
@@ -62,22 +68,22 @@ void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8
   }
 }
 
-void fill_backbuffer(Backbuffer backbuffer)
+void clear_background(Backbuffer* backbuffer, u8 r, u8 g, u8 b)
 {
-  u8* line = backbuffer.buffer;
-  for (u32 y = 0;y < backbuffer.lineCount;++y)
+  u8* line = backbuffer->buffer;
+  for (u32 y = 0;y < backbuffer->lineCount;++y)
   {
     u8* pixelByte = line;
-    for (u32 x = 0;x < backbuffer.pixelsPerLine;++x)
+    for (u32 x = 0;x < backbuffer->pixelsPerLine;++x)
     {
       // NOTE: still assuming 4 bytes per pixel
       u32* pixel = (u32*)pixelByte;
       // fill the color
-      *pixel |= (0x18 << backbuffer.blueShift);
-      *pixel |= (0x18 << backbuffer.greenShift);
-      *pixel |= (0x18 << backbuffer.redShift);
-      pixelByte += backbuffer.bytesPerPixel;
+      *pixel |= ((u32)b << backbuffer->blueShift);
+      *pixel |= ((u32)g << backbuffer->greenShift);
+      *pixel |= ((u32)r << backbuffer->redShift);
+      pixelByte += backbuffer->bytesPerPixel;
     }
-    line += backbuffer.pitch;
+    line += backbuffer->pitch;
   }
 }
