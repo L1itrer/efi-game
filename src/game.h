@@ -34,6 +34,10 @@ typedef double f64;
 #define internal static 
 #define local_persist static 
 
+#define Kilobytes(n) (n*1024LL)
+#define Megabytes(n) (Kilobytes(n)*1024LL)
+#define Gigabytes(n) (Megabytes(n)*1024LL)
+
 typedef struct Backbuffer {
   void* buffer;
   u32 pixelsPerLine;
@@ -84,7 +88,13 @@ typedef struct PlatformProcs{
   i32 (*debug_printf)(const char*, ...);
 }PlatformProcs;
 
+typedef struct Memory{
+  void* data;
+  usize size;
+}Memory;
+
 void fill_backbuffer(Backbuffer backbuffer);
-void game_update_render(Backbuffer backbuffer, Keyboard keyboard, PlatformProcs procs);
+void game_update_render(Backbuffer backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory);
+void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a);
 
 #endif

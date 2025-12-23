@@ -243,25 +243,38 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   backbuffer.redShift   = 16;
   backbuffer.alphaShift = 24;
   u32 bytesPerBuffer = backbuffer.bytesPerPixel * backbuffer.lineCount * backbuffer.pixelsPerLine;
-  status = Gst->bootServices->allocate_pool(EfiBootServicesData, bytesPerBuffer*2, (void**)&frontbuffer);
+  u64 permanentMemorySize = Kilobytes(64LL);
+  u64 temporaryMemorySize = Megabytes(12LL);
+  u64 poolSize = (u64)bytesPerBuffer*2LL + permanentMemorySize + temporaryMemorySize;
+  status = Gst->bootServices->allocate_pool(EfiBootServicesData, poolSize, (void**)&frontbuffer);
   if (EFI_ERROR(status))
   {
-    debug_printf("Could not allocate memory for the front and backbuffer: %s\n", efiErrorCodeStrs[status]);
+    debug_printf("Could not allocate %llu bytes for the memory pool: %s\n", poolSize, efiErrorCodeStrs[status]);
     return status;
   }
+  Memory permaMemory = {
+    .data = (void*)((u8*)frontbuffer + bytesPerBuffer + bytesPerBuffer),
+    .size = permanentMemorySize
+  };
+  Memory tempMemory = {
+    .data = (void*)((u8*)frontbuffer + bytesPerBuffer + bytesPerBuffer + permanentMemorySize),
+    .size = temporaryMemorySize
+  };
+  memset(permaMemory.data, 0, permanentMemorySize);
+  memset(tempMemory.data, 0, temporaryMemorySize);
   debug_printf("Initialization complete\n");
   backbuffer.buffer = (u8*)frontbuffer + bytesPerBuffer;
   Keyboard keyboard = {0};
+  // TODO: add a panic
   PlatformProcs procs = {
     .debug_printf = debug_printf,
   };
-  bool32 running = TRUE;
-  for (;running;)
+  for (;;)
   {
     memset(backbuffer.buffer, 0, bytesPerBuffer);
     keyboard = efi_poll_keyboard();
-    if (keyboard.key[KEY_CHAR_Q]) running = FALSE;
-    game_update_render(backbuffer, keyboard, procs);
+    if (keyboard.key[KEY_CHAR_Q]) break;
+    game_update_render(backbuffer, keyboard, procs, &permaMemory, &tempMemory);
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;
