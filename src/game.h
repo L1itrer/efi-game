@@ -47,6 +47,44 @@ typedef struct Backbuffer {
 }Backbuffer;
 
 
+#define KEYS\
+  KEY_DEF(KEY_UP, 1, 0) \
+  KEY_DEF(KEY_LEFT, 4, 0) \
+  KEY_DEF(KEY_RIGHT, 3, 0) \
+  KEY_DEF(KEY_DOWN, 2, 0) \
+  KEY_DEF(KEY_CHAR_U, 0, 'u') \
+  KEY_DEF(KEY_CHAR_Z, 0, 'z') \
+  KEY_DEF(KEY_CHAR_Q, 0, 'q') \
+  KEY_DEF(KEY_ENTER, 0, '\r') \
+
+typedef enum KeyKind{
+  #define KEY_DEF(enum, s, c) enum,
+  KEYS
+  #undef KEY_DEF
+  __KEY_COUNT
+}KeyKind;
+
+u16 keyScanCodes[] = {
+  #define KEY_DEF(e, scan, c) scan,
+  KEYS
+  #undef KEY_DEF
+};
+
+u16 keyPrintable[] = {
+  #define KEY_DEF(e, s, ch) ch,
+  KEYS
+  #undef KEY_DEF
+};
+
+typedef struct Keyboard{
+  bool8 key[__KEY_COUNT];
+}Keyboard;
+
+typedef struct PlatformProcs{
+  i32 (*debug_printf)(const char*, ...);
+}PlatformProcs;
+
 void fill_backbuffer(Backbuffer backbuffer);
+void game_update_render(Backbuffer backbuffer, Keyboard keyboard, PlatformProcs procs);
 
 #endif

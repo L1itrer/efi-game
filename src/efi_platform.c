@@ -1,4 +1,5 @@
 #include "efi.h"
+#include "game.h"
 
 #ifdef RELEASE
 #  else
@@ -74,20 +75,22 @@ internal void write_serial(char a)
   outb(PORT,a);
 }
 
-internal void debug_printf(const char* fmt, ...)
+internal i32 debug_printf(const char* fmt, ...)
 {
+  i32 count = 0;
 #ifdef RELEASE
 #else
   char buffer[1024] = {0};
   va_list va;
   va_start(va, fmt);
-  int count = stbsp_vsnprintf(buffer, 1024, fmt, va);
+  count = stbsp_vsnprintf(buffer, 1024, fmt, va);
   va_end(va);
   for (int i = 0;i < count;++i)
   {
     write_serial(buffer[i]);
   }
 #endif
+  return count;
 }
 
 internal EfiStatus print(char16* str)
@@ -147,6 +150,29 @@ void *memcpy(void *dest, const void *src, size_t n)
     ((char*)dest)[i] = ((char*)src)[i];
   }
   return dest;
+}
+
+Keyboard efi_poll_keyboard(void)
+{
+  Keyboard keyboard = {0};
+  EfiInputKey key;
+  EfiStatus result = EFI_SUCCESS;
+  while (result == EFI_SUCCESS)
+  {
+    result = Gst->conIn->read_key_stroke(Gst->conIn, &key);
+    if (result == EFI_SUCCESS)
+    {
+      for (i32 i = 0;i < __KEY_COUNT;++i)
+      {
+        if ((key.scanCode == keyScanCodes[i]) && keyPrintable[i] == 0)
+          keyboard.key[i] = TRUE;
+        else if (key.unicodeChar == keyPrintable[i] && keyScanCodes[i] == 0)
+          keyboard.key[i] = TRUE;
+      }
+    }
+  }
+  Gst->conIn->reset(Gst->conIn, 0);
+  return keyboard;
 }
 
 
@@ -225,10 +251,17 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   }
   debug_printf("Initialization complete\n");
   backbuffer.buffer = (u8*)frontbuffer + bytesPerBuffer;
-  for (;;)
+  Keyboard keyboard = {0};
+  PlatformProcs procs = {
+    .debug_printf = debug_printf,
+  };
+  bool32 running = TRUE;
+  for (;running;)
   {
     memset(backbuffer.buffer, 0, bytesPerBuffer);
-    game_update_render(backbuffer);
+    keyboard = efi_poll_keyboard();
+    if (keyboard.key[KEY_CHAR_Q]) running = FALSE;
+    game_update_render(backbuffer, keyboard, procs);
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;

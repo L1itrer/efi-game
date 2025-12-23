@@ -1,8 +1,12 @@
 #include "game.h"
 
 
-void game_update_render(Backbuffer backbuffer)
+void game_update_render(Backbuffer backbuffer, Keyboard keyboard, PlatformProcs procs)
 {
+  for (int i = 0; i < __KEY_COUNT;++i)
+  {
+    if (keyboard.key[i]) procs.debug_printf("%d pressed\n", i);
+  }
   fill_backbuffer(backbuffer);
 }
 
