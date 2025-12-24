@@ -26,6 +26,7 @@ char* efiErrorCodeStrs[] = {
 #undef ERR_CODE
 
 global EfiSystemTable* Gst;
+global bool32 GcanUseSerial = FALSE;
 
 
 internal inline void outb(u16 port, u8 data)
@@ -59,6 +60,7 @@ internal int init_serial()
     return 1;
   }
   outb(PORT + 4, 0x0F);
+  GcanUseSerial = TRUE;
   return 0;
 }
 
@@ -78,14 +80,17 @@ internal i32 debug_printf(const char* fmt, ...)
   i32 count = 0;
 #ifdef RELEASE
 #else
-  char buffer[1024] = {0};
-  va_list va;
-  va_start(va, fmt);
-  count = stbsp_vsnprintf(buffer, 1024, fmt, va);
-  va_end(va);
-  for (int i = 0;i < count;++i)
+  if (GcanUseSerial)
   {
-    write_serial(buffer[i]);
+    char buffer[1024] = {0};
+    va_list va;
+    va_start(va, fmt);
+    count = stbsp_vsnprintf(buffer, 1024, fmt, va);
+    va_end(va);
+    for (int i = 0;i < count;++i)
+    {
+      write_serial(buffer[i]);
+    }
   }
 #endif
   return count;
@@ -182,7 +187,7 @@ bool32 cpu_can_use_rdtsc(u64* tsc_freq)
     "movl %%eax, %[output]\n"
     : [output] "=r" (maxCpuIdLeaves)
     :
-    : "%eax"
+    : "%eax", "memory"
   );
   debug_printf("Cpu leaves: %u\n", maxCpuIdLeaves);
   if (maxCpuIdLeaves < 0x15) return FALSE;
@@ -191,6 +196,8 @@ bool32 cpu_can_use_rdtsc(u64* tsc_freq)
     "movl $0x15, %0\n"
     "cpuid\n"
     : "=a" (eax), "=b" (ebx), "=c" (ecx)
+    :
+    : "memory"
   );
 
   debug_printf("eax: %u, ebx: %u, ecx: %u\n", eax, ebx, ecx);
@@ -222,6 +229,17 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     debug_printf("Serial works, can do printf debugging...!\n");
   }
 
+  u64 tsc_freq = 0;
+  bool32 invariantArt = cpu_can_use_rdtsc(&tsc_freq);
+  if (invariantArt)
+  {
+    debug_printf("This cpu supports invariant tsc!\n");
+  }
+  else
+  {
+    debug_printf("No invariant tsc for you!\n");
+  }
+
 
   status = Gst->bootServices->locate_protocol(&gopGuid, NULL, (void**)&gop);
   if (EFI_ERROR(status))
@@ -238,16 +256,6 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   {
     debug_printf("Could not get native mode: %s\n", efiErrorCodeStrs[status]);
     return status;
-  }
-  u64 tsc_freq = 0;
-  bool32 invariantArt = cpu_can_use_rdtsc(&tsc_freq);
-  if (invariantArt)
-  {
-    debug_printf("This cpu supports invariant tsc!\n");
-  }
-  else
-  {
-    debug_printf("No invariant tsc for you!\n");
   }
   modeCount = gop->mode->maxMode;
   bool32 foundMode = FALSE;
@@ -312,12 +320,16 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     memset(backbuffer.buffer, 0, bytesPerBuffer);
     keyboard = efi_poll_keyboard();
     if (keyboard.key[KEY_CHAR_Q]) break;
-    game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory, 0.0333f);
+    game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory, 0.03f);
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;
     status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, 0);
-    Gst->bootServices->stall(8000);
+    // HACK: time is quite hardcoded for now
+    if (EFI_ERROR(Gst->bootServices->stall(30000)))
+    {
+      debug_printf("did not stall correctly\n");
+    }
   }
   wait_for_key();
 
