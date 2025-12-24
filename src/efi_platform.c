@@ -27,8 +27,6 @@ char* efiErrorCodeStrs[] = {
 
 global EfiSystemTable* Gst;
 
-#define HORIZONTAL_RESOLUTION (1920 / 2)
-#define VERTICAL_RESOLUTION (1080 / 2)
 
 internal inline void outb(u16 port, u8 data)
 {
@@ -175,6 +173,33 @@ Keyboard efi_poll_keyboard(void)
   return keyboard;
 }
 
+bool32 cpu_can_use_rdtsc(u64* tsc_freq)
+{
+  u32 maxCpuIdLeaves = 123, eax = 69, ebx = 69, ecx = 69;
+  __asm__ __volatile__(
+    "movl $0, %%eax\n"
+    "cpuid\n"
+    "movl %%eax, %[output]\n"
+    : [output] "=r" (maxCpuIdLeaves)
+    :
+    : "%eax"
+  );
+  debug_printf("Cpu leaves: %u\n", maxCpuIdLeaves);
+  if (maxCpuIdLeaves < 0x15) return FALSE;
+
+  __asm__ __volatile__(
+    "movl $0x15, %0\n"
+    "cpuid\n"
+    : "=a" (eax), "=b" (ebx), "=c" (ecx)
+  );
+
+  debug_printf("eax: %u, ebx: %u, ecx: %u\n", eax, ebx, ecx);
+
+  if (ebx == 0 || ecx == 0) return FALSE;
+  *tsc_freq = ((u64)ebx/(u64)eax) * (u64)ecx;
+  return TRUE;
+}
+
 
 // make clang shut up about unused image handle
 global EfiHandle gImageHandle;
@@ -214,6 +239,16 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     debug_printf("Could not get native mode: %s\n", efiErrorCodeStrs[status]);
     return status;
   }
+  u64 tsc_freq = 0;
+  bool32 invariantArt = cpu_can_use_rdtsc(&tsc_freq);
+  if (invariantArt)
+  {
+    debug_printf("This cpu supports invariant tsc!\n");
+  }
+  else
+  {
+    debug_printf("No invariant tsc for you!\n");
+  }
   modeCount = gop->mode->maxMode;
   bool32 foundMode = FALSE;
   for (usize i = 0;i < modeCount;++i)
@@ -243,9 +278,12 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   backbuffer.redShift   = 16;
   backbuffer.alphaShift = 24;
   u32 bytesPerBuffer = backbuffer.bytesPerPixel * backbuffer.lineCount * backbuffer.pixelsPerLine;
-  u64 permanentMemorySize = Kilobytes(64LL);
-  u64 temporaryMemorySize = Megabytes(12LL);
+  u64 permanentMemorySize = PERMANENT_MEMORY_SIZE;
+  u64 temporaryMemorySize = TEMPORARY_MEMORY_SIZE;
   u64 poolSize = (u64)bytesPerBuffer*2LL + permanentMemorySize + temporaryMemorySize;
+  // TODO: allocate pool actually has very small limits
+  // maybe I should read the memory map and allocate stuff
+  // myself
   status = Gst->bootServices->allocate_pool(EfiBootServicesData, poolSize, (void**)&frontbuffer);
   if (EFI_ERROR(status))
   {
@@ -274,7 +312,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     memset(backbuffer.buffer, 0, bytesPerBuffer);
     keyboard = efi_poll_keyboard();
     if (keyboard.key[KEY_CHAR_Q]) break;
-    game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory);
+    game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory, 0.0333f);
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;

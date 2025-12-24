@@ -150,6 +150,17 @@ bool build_debug(Cmd* cmd)
   return true;
 }
 
+void build_x11(Cmd* cmd)
+{
+  compiler(cmd);
+  cmd_append(cmd, "-Wall", "-Wextra");
+  cmd_append(cmd, "-g");
+  cmd_append(cmd, "./src/x11_platform.c");
+  cmd_append(cmd, "-o", BUILD_DIR "/sokoban_x11");
+  //cmd_append(cmd, "-nostdlib");
+  cmd_append(cmd, "-lX11");
+}
+
 int main(int argc, char** argv)
 {
   NOB_GO_REBUILD_URSELF(argc, argv);
@@ -167,6 +178,8 @@ int main(int argc, char** argv)
   cmd_append(cmd, "-I./src/thirdparty/stb/");
   ldflags(cmd);
 
+  if (!cmd_run(cmd, .async = &procs)) return 1;
+  build_x11(cmd);
   if (!cmd_run(cmd, .async = &procs)) return 1;
 
   //build_debug(cmd);

@@ -7,8 +7,9 @@ typedef struct GameState{
 }GameState;
 
 
-void game_update_render(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory)
+void game_update_render(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory, f32 dt)
 {
+  UNUSED(temporaryMemory);
   if (sizeof(GameState) > permanentMemory->size)
   {
     // TODO: panic
