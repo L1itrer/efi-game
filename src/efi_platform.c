@@ -1,5 +1,7 @@
 #include "efi.h"
 #include "game.h"
+#define x86_INTRINSICS_IMPLEMENTATION
+#include "x86_intrinsics.h"
 
 #ifdef RELEASE
 #  else
@@ -178,35 +180,6 @@ Keyboard efi_poll_keyboard(void)
   return keyboard;
 }
 
-bool32 cpu_can_use_rdtsc(u64* tsc_freq)
-{
-  u32 maxCpuIdLeaves = 123, eax = 69, ebx = 69, ecx = 69;
-  __asm__ __volatile__(
-    "movl $0, %%eax\n"
-    "cpuid\n"
-    "movl %%eax, %[output]\n"
-    : [output] "=r" (maxCpuIdLeaves)
-    :
-    : "%eax", "memory"
-  );
-  debug_printf("Cpu leaves: %u\n", maxCpuIdLeaves);
-  if (maxCpuIdLeaves < 0x15) return FALSE;
-
-  __asm__ __volatile__(
-    "movl $0x15, %0\n"
-    "cpuid\n"
-    : "=a" (eax), "=b" (ebx), "=c" (ecx)
-    :
-    : "memory"
-  );
-
-  debug_printf("eax: %u, ebx: %u, ecx: %u\n", eax, ebx, ecx);
-
-  if (ebx == 0 || ecx == 0) return FALSE;
-  *tsc_freq = ((u64)ebx/(u64)eax) * (u64)ecx;
-  return TRUE;
-}
-
 
 // make clang shut up about unused image handle
 global EfiHandle gImageHandle;
@@ -230,7 +203,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   }
 
   u64 tsc_freq = 0;
-  bool32 invariantArt = cpu_can_use_rdtsc(&tsc_freq);
+  bool32 invariantArt = x86_can_use_rdtsc(&tsc_freq);
   if (invariantArt)
   {
     debug_printf("This cpu supports invariant tsc!\n");
