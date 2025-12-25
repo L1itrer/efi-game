@@ -150,7 +150,7 @@ bool build_debug(Cmd* cmd)
   return true;
 }
 
-void build_x11(Cmd* cmd)
+int build_x11(Cmd* cmd, Procs* procs)
 {
   compiler(cmd);
   cmd_append(cmd, "-Wall", "-Wextra");
@@ -159,6 +159,16 @@ void build_x11(Cmd* cmd)
   cmd_append(cmd, "-o", BUILD_DIR "/sokoban_x11");
   //cmd_append(cmd, "-nostdlib");
   cmd_append(cmd, "-lX11");
+  if (!cmd_run(cmd, .async = procs)) return 1;
+  compiler(cmd);
+  cmd_append(cmd, "./src/game.c");
+  cmd_append(cmd, "-Wall", "-Wextra", "-g");
+  cmd_append(cmd, "-o", BUILD_DIR "/game.so");
+  cmd_append(cmd, "-shared", "-fPIC");
+  cmd_append(cmd, "-fpic");
+  cmd_append(cmd, "-nostdlib");
+  if (!cmd_run(cmd, .async = procs)) return 1;
+  return 0;
 }
 
 int main(int argc, char** argv)
@@ -179,8 +189,7 @@ int main(int argc, char** argv)
   ldflags(cmd);
 
   if (!cmd_run(cmd, .async = &procs)) return 1;
-  build_x11(cmd);
-  if (!cmd_run(cmd, .async = &procs)) return 1;
+  build_x11(cmd, &procs);
 
   //build_debug(cmd);
 

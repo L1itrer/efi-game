@@ -55,6 +55,9 @@ typedef struct Backbuffer {
 
 #define HORIZONTAL_RESOLUTION (1920 / 2)
 #define VERTICAL_RESOLUTION (1080 / 2)
+
+#define TARGET_US_PER_FRAME 30000
+
 #define PERMANENT_MEMORY_SIZE Kilobytes(64LL);
 #define TEMPORARY_MEMORY_SIZE Megabytes(12LL);
 
@@ -101,8 +104,13 @@ typedef struct Memory{
   usize size;
 }Memory;
 
+
+#define GAME_UPDATE_RENDER(name) void name(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory, f32 dt)
+typedef GAME_UPDATE_RENDER(GameUpdateRender);
+GAME_UPDATE_RENDER(game_update_render);
+
+
 void fill_backbuffer(Backbuffer backbuffer);
-void game_update_render(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory, f32 dt);
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a);
 void clear_background(Backbuffer* backbuffer, u8 r, u8 g, u8 b);
 

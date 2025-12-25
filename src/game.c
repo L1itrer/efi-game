@@ -7,7 +7,7 @@ typedef struct GameState{
 }GameState;
 
 
-void game_update_render(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory, f32 dt)
+GAME_UPDATE_RENDER(game_update_render)
 {
   UNUSED(temporaryMemory);
   if (sizeof(GameState) > permanentMemory->size)
