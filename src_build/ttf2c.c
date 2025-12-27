@@ -1,5 +1,5 @@
 #define NOB_IMPLEMENTATION
-#include "../src/thirdparty/nob/nob.h"
+#include "../src/thirdparty/nob.h"
 
 #include <time.h>
 

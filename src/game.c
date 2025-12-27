@@ -159,7 +159,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
   }
   draw_rectangle(backbuffer, state->playerX * TILE_WIDTH_PIXELS+1, state->playerY * TILE_HEIGHT_PIXELS+1, TILE_WIDTH_PIXELS-1, TILE_HEIGHT_PIXELS-1, 0, 0xee, 0xee, 0xff);
 
-  const char* msg = "Hello, World!\0";
+  const char* msg = "Hello, World!";
   debug_font_draw(backbuffer, msg, 200.0f, 100.0f, 0x0, 0x0, 0x0);
 }
 

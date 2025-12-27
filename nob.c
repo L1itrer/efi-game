@@ -2,7 +2,7 @@
 #define NOB_EXPERIMENTAL_DELETE_OLD
 #define NOB_STRIP_PREFIX
 //#define NOB_NO_ECHO
-#include "./src/thirdparty/nob/nob.h"
+#include "./src/thirdparty/nob.h"
 
 #define BUILD_DIR "./build"
 #define EFI_EXE "BOOTX64.EFI"
