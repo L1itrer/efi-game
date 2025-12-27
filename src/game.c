@@ -46,6 +46,8 @@ internal const Direction directions[] = {
   (Direction){.x =  0, .y =  1},
 };
 
+internal PlatformProcs Gprocs = {0};
+
 void game_update_level(GameState* state, Keyboard* keys)
 {
   for (i32 dir = 0;dir < 4;++dir)
@@ -87,7 +89,7 @@ size_t strlen(const char* str)
 {
   char* ptr = (char*)str;
   size_t len = 0;
-  while(ptr != NULL)
+  while(*ptr != 0)
   {
     len += 1;
     ptr += 1;
@@ -157,7 +159,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
   }
   draw_rectangle(backbuffer, state->playerX * TILE_WIDTH_PIXELS+1, state->playerY * TILE_HEIGHT_PIXELS+1, TILE_WIDTH_PIXELS-1, TILE_HEIGHT_PIXELS-1, 0, 0xee, 0xee, 0xff);
 
-  const char* msg = "Hello, World!";
+  const char* msg = "Hello, World!\0";
   debug_font_draw(backbuffer, msg, 200.0f, 100.0f, 0x0, 0x0, 0x0);
 }
 
@@ -172,6 +174,7 @@ GAME_UPDATE_RENDER(game_update_render)
     procs.debug_printf("Exceeded the permanent memory limit!\n");
     return;
   }
+  Gprocs = procs;
   GameState* gameState = (GameState*)permanentMemory->data;
   if (!gameState->initialized)
   {
