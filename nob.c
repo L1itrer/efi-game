@@ -6,6 +6,8 @@
 
 #define BUILD_DIR "./build"
 #define EFI_EXE "BOOTX64.EFI"
+#define SRC_BUILD_DIR  "./src_build"
+#define META_DIR "./meta"
 
 void cflags(Cmd* cmd, bool warnings)
 {
@@ -167,6 +169,7 @@ int build_x11(Cmd* cmd, Procs* procs)
   cmd_append(cmd, "-shared", "-fPIC");
   cmd_append(cmd, "-fpic");
   cmd_append(cmd, "-nostdlib");
+  //cmd_append(cmd, "-O2");
   if (!cmd_run(cmd, .async = procs)) return 1;
   return 0;
 }
@@ -178,6 +181,25 @@ int main(int argc, char** argv)
   Procs procs = {0};
   Cmd* cmd = &cmd_static;
   if (!mkdir_if_not_exists(BUILD_DIR)) return 1;
+  if (!mkdir_if_not_exists(META_DIR)) return 1;
+
+  if (needs_rebuild1(BUILD_DIR "/ttf2c", SRC_BUILD_DIR "/ttf2c.c"))
+  {
+    compiler(cmd);
+    cmd_append(cmd, "-Wall", "-Wextra");
+    cmd_append(cmd, SRC_BUILD_DIR "/ttf2c.c");
+    cmd_append(cmd, "-o", BUILD_DIR "/ttf2c");
+    cmd_append(cmd, "-lm", "-g");
+    if (!cmd_run(cmd)) return 1;
+  }
+  if (needs_rebuild1(META_DIR "/roboto.h", SRC_BUILD_DIR "/ttf2c.c"))
+  {
+    cmd_append(cmd, BUILD_DIR "/ttf2c");
+    cmd_append(cmd, "./assets/fonts/Roboto-Regular.ttf");
+    cmd_append(cmd, META_DIR "/roboto.h");
+    cmd_append(cmd, "roboto");
+    if (!cmd_run(cmd)) return 1;
+  }
 
   compiler(cmd);
   cflags(cmd, true);

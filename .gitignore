@@ -9,6 +9,9 @@
 /build
 /EFI
 
+# folder for meta generated stuff
+/meta
+
 # folder for cd image
 /img
 

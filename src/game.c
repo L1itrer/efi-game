@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include "../meta/roboto.h"
+
 typedef enum GameScene{
   SCENE_LEVEL,
   SCENE_MENU,
@@ -81,6 +83,52 @@ void tile_draw(Backbuffer* backbuffer, i32 x, i32 y, u8 r, u8 g, u8 b, u8 a)
   draw_rectangle(backbuffer, pixelX, pixelY, TILE_WIDTH_PIXELS, TILE_HEIGHT_PIXELS, r, g, b, a);
 }
 
+size_t strlen(const char* str)
+{
+  char* ptr = (char*)str;
+  size_t len = 0;
+  while(ptr != NULL)
+  {
+    len += 1;
+    ptr += 1;
+  }
+  return len;
+}
+
+void debug_font_draw(Backbuffer* backbuffer, const char* str, f32 penX, f32 penY, u8 r, u8 g, u8 b)
+{
+  size_t len = strlen(str);
+  for (size_t i = 0;i < len;++i)
+  {
+    CharData cdata = roboto_cdata[str[i] - roboto_START_CHAR];
+    for (i32 dy = cdata.y0;dy < cdata.y1;++dy)
+    {
+      i32 y = (i32)penY + dy - cdata.y0 + cdata.yoff;
+      if (y >= 0 && y < (i32)backbuffer->lineCount)
+      {
+        for (i32 dx = cdata.x0;dx < cdata.x1;++dx)
+        {
+          i32 x = (i32)penX + dx - cdata.x0 + cdata.xoff;
+          u32 intensity = roboto_pixels[dy * roboto_WIDTH + dx];
+          i32 index = y * backbuffer->pixelsPerLine + x;
+          if (x < (i32)backbuffer->pixelsPerLine && x >= 0)
+          {
+            u32* pixel = (u32*)backbuffer->buffer + index;
+            u32 currB = ((*pixel >> backbuffer->blueShift) & 0x000000ff);
+            u32 currR = ((*pixel >> backbuffer->redShift) & 0x000000ff);
+            u32 currG = ((*pixel >> backbuffer->greenShift) & 0x000000ff);
+            *pixel = 0;
+            *pixel |= ((currB * (255 - intensity) + b * intensity)/255) << backbuffer->blueShift;
+            *pixel |= ((currG * (255 - intensity) + g * intensity)/255) << backbuffer->greenShift;
+            *pixel |= ((currR * (255 - intensity) + r * intensity)/255) << backbuffer->redShift;
+          }
+      }
+      }
+    }
+    penX += cdata.xadvance;
+  }
+}
+
 void game_draw(Backbuffer* backbuffer, GameState* state)
 {
   clear_background(backbuffer, 0, 0, 0);
@@ -108,6 +156,9 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     }
   }
   draw_rectangle(backbuffer, state->playerX * TILE_WIDTH_PIXELS+1, state->playerY * TILE_HEIGHT_PIXELS+1, TILE_WIDTH_PIXELS-1, TILE_HEIGHT_PIXELS-1, 0, 0xee, 0xee, 0xff);
+
+  const char* msg = "Hello, World!";
+  debug_font_draw(backbuffer, msg, 200.0f, 100.0f, 0x0, 0x0, 0x0);
 }
 
 

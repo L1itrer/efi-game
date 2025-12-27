@@ -210,11 +210,15 @@ int main(int argc, char** argv)
     //printf("%lu [us], %lf [s]\n", microSecondsElapsed, secondsElapsed);
 
 
-    tscLast = tscEnd;
     if (microSecondsElapsed < TARGET_US_PER_FRAME)
     {
       u64 remainingUs = TARGET_US_PER_FRAME - microSecondsElapsed;
       usleep(remainingUs);
+      tscLast = x86_rdtsc();
+    }
+    else
+    {
+      printf("!!!!!Missing frame! %lu\n", microSecondsElapsed);
     }
   }
 
