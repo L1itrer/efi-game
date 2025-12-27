@@ -72,6 +72,7 @@ typedef struct Backbuffer {
   KEY_DEF(KEY_CHAR_Q, 0, 'q') \
   KEY_DEF(KEY_ENTER, 0, '\r') \
 
+
 typedef enum KeyKind{
   #define KEY_DEF(enum, s, c) enum,
   KEYS
