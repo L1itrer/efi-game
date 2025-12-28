@@ -1,43 +1,13 @@
 #include "game.h"
 
 #include "../meta/roboto.h"
+#include <stdint.h>
 
-typedef enum GameScene{
-  SCENE_LEVEL,
-  SCENE_MENU,
-  __SCENE_COUNT
-}GameScene;
+#ifndef ARENA_IMPLEMENTATION
+#define ARENA_IMPLEMENTATION
+#include "arena.h"
+#endif
 
-typedef enum TileKind{
-  TILE_NORMAL,
-  TILE_WALL,
-  TILE_NORMAL_CORRRECT,
-  __TILE_COUNT
-}TileKind;
-
-typedef struct Tile{
-  i32 tileKindEnum;
-  bool32 hasBox;
-}Tile;
-
-#define TILE_COUNT_WIDTH 16
-#define TILE_COUNT_HEIGHT 9
-
-#define TILE_WIDTH_PIXELS (HORIZONTAL_RESOLUTION / 16)
-#define TILE_HEIGHT_PIXELS (VERTICAL_RESOLUTION / 9)
-
-typedef struct GameState{
-  bool32 initialized;
-  i32 gameSceneEnum;
-  i32 playerX;
-  i32 playerY;
-  Tile tiles[TILE_COUNT_WIDTH * TILE_COUNT_HEIGHT];
-}GameState;
-
-typedef struct Direction{
-  i32 x;
-  i32 y;
-}Direction;
 
 internal const Direction directions[] = {
   (Direction){.x =  0, .y = -1},
@@ -47,6 +17,7 @@ internal const Direction directions[] = {
 };
 
 internal PlatformProcs Gprocs = {0};
+internal Arena Gtemp = {0};
 
 void game_update_level(GameState* state, Keyboard* keys)
 {
@@ -164,6 +135,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
 }
 
 
+// ENTRY POINT
 GAME_UPDATE_RENDER(game_update_render)
 {
   UNUSED(temporaryMemory);
@@ -175,6 +147,11 @@ GAME_UPDATE_RENDER(game_update_render)
     return;
   }
   Gprocs = procs;
+  Gtemp = (Arena){
+    .buffer = temporaryMemory->data,
+    .reserved = temporaryMemory->size,
+    .commited = 0,
+  };
   GameState* gameState = (GameState*)permanentMemory->data;
   if (!gameState->initialized)
   {

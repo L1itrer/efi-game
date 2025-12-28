@@ -115,4 +115,43 @@ void fill_backbuffer(Backbuffer backbuffer);
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a);
 void clear_background(Backbuffer* backbuffer, u8 r, u8 g, u8 b);
 
+
+typedef enum GameScene{
+  SCENE_LEVEL,
+  SCENE_MENU,
+  __SCENE_COUNT
+}GameScene;
+
+typedef enum TileKind{
+  TILE_NORMAL,
+  TILE_WALL,
+  TILE_NORMAL_CORRRECT,
+  __TILE_COUNT
+}TileKind;
+
+typedef struct Tile{
+  i32 tileKindEnum;
+  bool32 hasBox;
+}Tile;
+
+#define TILE_COUNT_WIDTH 16
+#define TILE_COUNT_HEIGHT 9
+
+#define TILE_WIDTH_PIXELS (HORIZONTAL_RESOLUTION / 16)
+#define TILE_HEIGHT_PIXELS (VERTICAL_RESOLUTION / 9)
+
+typedef struct GameState{
+  bool32 initialized;
+  i32 gameSceneEnum;
+  i32 playerX;
+  i32 playerY;
+  Tile tiles[TILE_COUNT_WIDTH * TILE_COUNT_HEIGHT];
+}GameState;
+
+typedef struct Direction{
+  i32 x;
+  i32 y;
+}Direction;
+
+
 #endif
