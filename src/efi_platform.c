@@ -303,7 +303,10 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     u64 remainingUs;
     if (invariantArt)
     {
+      // WARNING: THIS BRANCH ONLY CAN BE TESTED ON REAL HARDWARE
+      // CRITICAL FOR IT TO WORK
       tscEnd = x86_rdtsc();
+      tscWorkEnd = tscEnd;
       u64 tscDelta = tscEnd - tscLast;
       u64 tscWorkDelta = tscWorkEnd - tscWorkLast;
       //u64 microSecondsElapsed = (tscDelta * 1000 * 1000)/tscFreq;
