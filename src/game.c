@@ -24,14 +24,26 @@ internal const Direction directions[] = {
 internal PlatformProcs Gprocs = {0};
 internal Arena Gtemp = {0};
 
+
+void *memcpy(void *dest, const void *src, size_t n)
+{
+  for (size_t i = 0; i < n; i++)
+  {
+    ((char*)dest)[i] = ((char*)src)[i];
+  }
+  return dest;
+}
+
 char* tprintf(const char* fmt, ...)
 {
   i32 count = 0;
   va_list va;
   va_start(va, fmt);
-  void* base = Gtemp.buffer + Gtemp.commited;
-  count = stbsp_vsnprintf(base, Gtemp.reserved - Gtemp.commited, fmt, va);
-  return arena_alloc(&Gtemp, count);
+  char base[1024];
+  count = stbsp_vsnprintf(base, 1024, fmt, va);
+  void* ptr = arena_alloc(&Gtemp, count);
+  memcpy(ptr, base, count);
+  return ptr;
 }
 
 void game_update_level(GameState* state, Keyboard* keys)
@@ -192,7 +204,9 @@ GAME_UPDATE_RENDER(game_update_render)
   game_update(gameState, &keyboard);
   game_draw(backbuffer, gameState);
   gameState->totalSeconds += dt;
-  //debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds), 300.0f, 100.0f, 0x0, 0, 0);
+  debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds), 300.0f, 100.0f, 0x0, 0, 0);
+  debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds + 1.0f), 300.0f, 200.0f, 0xff, 0xff, 0xff);
+  debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds + 2.0f), 300.0f, 300.0f, 0xff, 0x88, 0x55);
 }
 
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a)
