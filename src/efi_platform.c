@@ -194,8 +194,8 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     debug_printf("Serial works, can do printf debugging...!\n");
   }
 
-  u64 tsc_freq = 0;
-  bool32 invariantArt = x86_can_use_rdtsc(&tsc_freq);
+  u64 tscFreq = 0;
+  bool32 invariantArt = x86_can_use_rdtsc(&tscFreq);
   if (invariantArt)
   {
     debug_printf("This cpu supports invariant tsc!\n");
@@ -280,6 +280,13 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   PlatformProcs procs = {
     .debug_printf = debug_printf,
   };
+  u64 tscLast = 0, tscEnd = 0, tscWorkLast = 0, tscWorkEnd = 0;
+  if (invariantArt)
+  {
+    tscLast = x86_rdtsc();
+    tscWorkLast = tscLast;
+  }
+  f32 secondsElapsed = 0.03f;
   for (;;)
   {
     memset(backbuffer.buffer, 0, bytesPerBuffer);
@@ -289,12 +296,27 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;
-    status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, 0);
-    // HACK: time is quite hardcoded for now
-    if (EFI_ERROR(Gst->bootServices->stall(30000)))
+    status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, secondsElapsed);
+    u64 remainingUs;
+    if (invariantArt)
+    {
+      tscEnd = x86_rdtsc();
+      u64 tscDelta = tscEnd - tscLast;
+      u64 tscWorkDelta = tscWorkEnd - tscWorkLast;
+      //u64 microSecondsElapsed = (tscDelta * 1000 * 1000)/tscFreq;
+      secondsElapsed = (f32)tscDelta/(f32)tscFreq;
+      u64 workUs = (tscWorkDelta * 1000 * 1000)/tscFreq;
+      remainingUs = TARGET_US_PER_FRAME - workUs;
+    }
+    else remainingUs = 25000;
+    if (EFI_ERROR(Gst->bootServices->stall(remainingUs)))
     {
       debug_printf("did not stall correctly\n");
     }
+    // can do this every frame rdtsc is safe it's just useless
+    // without frequency
+    tscWorkLast = x86_rdtsc();
+    tscLast = tscEnd;
   }
   wait_for_key();
 

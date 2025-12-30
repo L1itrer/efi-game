@@ -40,6 +40,7 @@ char* tprintf(const char* fmt, ...)
   va_list va;
   va_start(va, fmt);
   char base[1024];
+  // HACK: stb_sprintf.h has custom callbacks maybe use that
   count = stbsp_vsnprintf(base, 1024, fmt, va);
   void* ptr = arena_alloc(&Gtemp, count);
   memcpy(ptr, base, count);
@@ -205,8 +206,6 @@ GAME_UPDATE_RENDER(game_update_render)
   game_draw(backbuffer, gameState);
   gameState->totalSeconds += dt;
   debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds), 300.0f, 100.0f, 0x0, 0, 0);
-  debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds + 1.0f), 300.0f, 200.0f, 0xff, 0xff, 0xff);
-  debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds + 2.0f), 300.0f, 300.0f, 0xff, 0x88, 0x55);
 }
 
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a)
