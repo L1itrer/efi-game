@@ -74,7 +74,7 @@ uint64_t x86_rdtsc(void)
     "or %%rdx, %0"
     : "=a" (result)
     :
-    : "%rdx"
+    : "%rdx", "memory"
   );
   return result;
 }

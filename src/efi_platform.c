@@ -273,7 +273,6 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   };
   memset(permaMemory.data, 0, permanentMemorySize);
   memset(tempMemory.data, 0, temporaryMemorySize);
-  debug_printf("Initialization complete\n");
   backbuffer.buffer = (u8*)frontbuffer + bytesPerBuffer;
   Keyboard keyboard = {0};
   // TODO: add a panic
@@ -286,13 +285,17 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     tscLast = x86_rdtsc();
     tscWorkLast = tscLast;
   }
-  f32 secondsElapsed = 0.03f;
+  char canUseRdtscMsg[16];
+  stbsp_sprintf(canUseRdtscMsg, "rdtsc: %s", invariantArt ? "true" : "false");
+  f64 secondsElapsed = 0.03;
+  debug_printf("Initialization complete\n");
   for (;;)
   {
     memset(backbuffer.buffer, 0, bytesPerBuffer);
     keyboard = efi_poll_keyboard();
     if (keyboard.key[KEY_CHAR_Q]) break;
     game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory, 0.03f);
+    debug_font_draw(&backbuffer, canUseRdtscMsg, 50.0f, 50.0f, 0, 0, 0);
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;
@@ -304,7 +307,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
       u64 tscDelta = tscEnd - tscLast;
       u64 tscWorkDelta = tscWorkEnd - tscWorkLast;
       //u64 microSecondsElapsed = (tscDelta * 1000 * 1000)/tscFreq;
-      secondsElapsed = (f32)tscDelta/(f32)tscFreq;
+      secondsElapsed = (f64)tscDelta/(f64)tscFreq;
       u64 workUs = (tscWorkDelta * 1000 * 1000)/tscFreq;
       remainingUs = TARGET_US_PER_FRAME - workUs;
     }
@@ -318,7 +321,6 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     tscWorkLast = x86_rdtsc();
     tscLast = tscEnd;
   }
-  wait_for_key();
 
 
   return status;

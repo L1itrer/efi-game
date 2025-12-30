@@ -156,15 +156,35 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
       }
     }
   }
-  draw_rectangle(backbuffer, state->playerX * TILE_WIDTH_PIXELS+1, state->playerY * TILE_HEIGHT_PIXELS+1, TILE_WIDTH_PIXELS-1, TILE_HEIGHT_PIXELS-1, 0, 0xee, 0xee, 0xff);
+  // player drawing
+  i32 playerOffset = 2 + state->playerAnim;
+  draw_rectangle(
+    backbuffer,
+    state->playerX * TILE_WIDTH_PIXELS+playerOffset,
+    state->playerY * TILE_HEIGHT_PIXELS+playerOffset,
+    TILE_WIDTH_PIXELS-playerOffset*2, TILE_HEIGHT_PIXELS-playerOffset*2,
+    0, 0xee, 0xee, 0xff
+  );
 }
 
+
+void fixed_update(GameState* state)
+{
+  if (!state->increasing)
+  {
+    state->playerAnim = state->playerAnim + 1;
+  }
+  else
+  {
+    state->playerAnim = state->playerAnim - 1;
+  }
+  if (state->playerAnim >= 15) state->increasing = !state->increasing;
+  else if (state->playerAnim <= 0) state->increasing = !state->increasing;
+}
 
 // ENTRY POINT
 GAME_UPDATE_RENDER(game_update_render)
 {
-  UNUSED(temporaryMemory);
-  UNUSED(dt);
   if (sizeof(GameState) > permanentMemory->size)
   {
     // TODO: panic
@@ -203,6 +223,12 @@ GAME_UPDATE_RENDER(game_update_render)
     gameState->initialized = TRUE;
   }
   game_update(gameState, &keyboard);
+  gameState->fixedUpdateCounter += dt;
+  if (gameState->fixedUpdateCounter >= FIXED_UPDATE_RATE_SECONDS)
+  {
+    gameState->fixedUpdateCounter -= FIXED_UPDATE_RATE_SECONDS;
+    fixed_update(gameState);
+  }
   game_draw(backbuffer, gameState);
   gameState->totalSeconds += dt;
   debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds), 300.0f, 100.0f, 0x0, 0, 0);

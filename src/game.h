@@ -57,6 +57,7 @@ typedef struct Backbuffer {
 #define VERTICAL_RESOLUTION (1080 / 2)
 
 #define TARGET_US_PER_FRAME 30000
+#define FIXED_UPDATE_RATE_SECONDS 0.0666 //15 times per second
 
 #define PERMANENT_MEMORY_SIZE Kilobytes(64LL);
 #define TEMPORARY_MEMORY_SIZE Megabytes(12LL);
@@ -106,7 +107,7 @@ typedef struct Memory{
 }Memory;
 
 
-#define GAME_UPDATE_RENDER(name) void name(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory, f32 dt)
+#define GAME_UPDATE_RENDER(name) void name(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory, f64 dt)
 typedef GAME_UPDATE_RENDER(GameUpdateRender);
 GAME_UPDATE_RENDER(game_update_render);
 
@@ -145,12 +146,15 @@ typedef struct Tile{
 #define TILE_HEIGHT_PIXELS (VERTICAL_RESOLUTION / 9)
 
 typedef struct GameState{
+  f64 fixedUpdateCounter;
   bool32 initialized;
   i32 gameSceneEnum;
   i32 playerX;
   i32 playerY;
+  i32 playerAnim;
   f32 totalSeconds;
   Tile tiles[TILE_COUNT_WIDTH * TILE_COUNT_HEIGHT];
+  bool32 increasing;
 }GameState;
 
 typedef struct Direction{

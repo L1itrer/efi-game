@@ -132,7 +132,7 @@ int main(int argc, char** argv)
   u64 tscLast, tscEnd = 0, tscWorkEnd = 0, tscWorkLast;
   tscLast = x86_rdtsc();
   tscWorkLast = tscLast;
-  f32 secondsElapsed = 0.0f;
+  f64 secondsElapsed = 0.0f;
   f32 fps = 0.0f;
   u64 workMicroseconds = 0;
 
@@ -218,7 +218,7 @@ int main(int argc, char** argv)
     u64 microSecondsElapsed = (tscDelta * 1000 * 1000)/tscFreq;
     u64 tscWorkDelta = tscWorkEnd - tscWorkLast;
     workMicroseconds = (tscWorkDelta * 1000 * 1000)/tscFreq;
-    secondsElapsed = (f32)tscDelta/(f32)tscFreq;
+    secondsElapsed = (f64)tscDelta/(f64)tscFreq;
     //printf("%lu [us], %lf [s]\n", microSecondsElapsed, secondsElapsed);
 
 
