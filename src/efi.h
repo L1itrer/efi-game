@@ -1,6 +1,34 @@
 #ifndef UEFI_H
 #define UEFI_H
-#include "game.h"
+
+#include <stdint.h>
+#include <stddef.h>
+
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+
+typedef u8 char8;
+typedef u16 char16;
+
+typedef i8 bool8;
+typedef i32 bool32;
+
+#define EFI_TRUE 1
+#define EFI_FALSE 0
+
+typedef uintptr_t usize;
+typedef ptrdiff_t isize;
+
+typedef float f32;
+typedef double f64;
+
 #define EFI_SYSTEM_TABLE_SIGNATURE 0x5453595320494249
 #define EFI_2_100_SYSTEM_TABLE_REVISION ((2<<16) | (100))
 #define EFI_2_90_SYSTEM_TABLE_REVISION  ((2<<16) | (90))
