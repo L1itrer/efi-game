@@ -190,8 +190,18 @@ int main(int argc, char** argv)
     cmd_append(cmd, SRC_BUILD_DIR "/ttf2c.c");
     cmd_append(cmd, "-o", BUILD_DIR "/ttf2c");
     cmd_append(cmd, "-lm", "-g");
-    if (!cmd_run(cmd)) return 1;
+    if (!cmd_run(cmd, .async = &procs)) return 1;
   }
+  if (needs_rebuild1(BUILD_DIR "/burnimg", SRC_BUILD_DIR "/burnimg.c"))
+  {
+    compiler(cmd);
+    cmd_append(cmd, "-Wall", "-Wextra");
+    cmd_append(cmd, SRC_BUILD_DIR "/burnimg.c");
+    cmd_append(cmd, "-o", BUILD_DIR "/burnimg");
+    cmd_append(cmd, "-g");
+    if (!cmd_run(cmd, .async = &procs)) return 1;
+  }
+  procs_flush(&procs);
   if (needs_rebuild1(META_DIR "/roboto.h", SRC_BUILD_DIR "/ttf2c.c"))
   {
     cmd_append(cmd, BUILD_DIR "/ttf2c");
@@ -204,7 +214,7 @@ int main(int argc, char** argv)
 
   compiler(cmd);
   cflags(cmd, true);
-  cmd_append(cmd, "-O0");
+  cmd_append(cmd, "-O2");
   cmd_append(cmd, "./src/efi_platform.c");
   cmd_append(cmd, "-o");
   cmd_append(cmd, BUILD_DIR "/" EFI_EXE);
