@@ -4,13 +4,13 @@
 
 
 #if !defined(__x86_64__) && !defined(_M_X64)
-#error "Only use this header on x86_64!
+#error "Only use this header on x86_64!"
 #endif
 
 
 uint32_t x86_cpuid_max_leaves(void);
 void x86_cpuid_read_tsc_freq(uint32_t* eax, uint32_t* ebx, uint32_t* ecx);
-int x86_can_use_rdtsc(uint64_t* tsc_freq);
+int x86_can_use_rdtsc(uint64_t* tscFreq);
 uint64_t x86_rdtsc(void);
 
 

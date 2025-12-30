@@ -321,6 +321,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     tscWorkLast = x86_rdtsc();
     tscLast = tscEnd;
   }
+  Gst->conOut->clear_screen(Gst->conOut);
 
 
   return status;
