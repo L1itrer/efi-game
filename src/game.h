@@ -110,6 +110,10 @@ typedef struct Memory{
 typedef GAME_UPDATE_RENDER(GameUpdateRender);
 GAME_UPDATE_RENDER(game_update_render);
 
+#define DEBUG_FONT_DRAW(name) void name(Backbuffer* backbuffer, const char* str, f32 penX, f32 penY, u8 r, u8 g, u8 b)
+typedef DEBUG_FONT_DRAW(DebugFontDraw);
+DEBUG_FONT_DRAW(debug_font_draw);
+
 
 void fill_backbuffer(Backbuffer backbuffer);
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a);
@@ -145,6 +149,7 @@ typedef struct GameState{
   i32 gameSceneEnum;
   i32 playerX;
   i32 playerY;
+  f32 totalSeconds;
   Tile tiles[TILE_COUNT_WIDTH * TILE_COUNT_HEIGHT];
 }GameState;
 

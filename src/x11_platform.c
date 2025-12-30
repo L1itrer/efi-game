@@ -24,6 +24,7 @@ const char* gameDllPath =  "./build/game.so";
 typedef struct X11GameLib{
   void* dll;
   GameUpdateRender* game_update_render;
+  DebugFontDraw* debug_font_draw;
   struct timespec prevTime;
 }X11GameLib;
 
@@ -33,12 +34,14 @@ internal void x11_load_game_dll(X11GameLib* game)
   game->dll = dlopen(gameDllPath, RTLD_NOW);
   if (game->dll == NULL)
   {
-    printf("wrong dll path\n");
+    printf("wrong dll path: %s\n", gameDllPath);
     assert(game->dll);
     // TODO: platform panic
   }
   game->game_update_render = dlsym(game->dll, "game_update_render");
   assert(game->game_update_render);
+  game->debug_font_draw = dlsym(game->dll, "debug_font_draw");
+  assert(game->debug_font_draw);
   stat(gameDllPath, &attibs);
   game->prevTime = attibs.st_ctim;
 }
@@ -126,9 +129,12 @@ int main(int argc, char** argv)
     .debug_printf = printf
   };
 
-  u64 tscLast, tscEnd = 0;
+  u64 tscLast, tscEnd = 0, tscWorkEnd = 0, tscWorkLast;
   tscLast = x86_rdtsc();
+  tscWorkLast = tscLast;
   f32 secondsElapsed = 0.0f;
+  f32 fps = 0.0f;
+  u64 workMicroseconds = 0;
 
   for (;running;)
   {
@@ -195,6 +201,9 @@ int main(int argc, char** argv)
     }
     memset(backbuffer.buffer, 0, bytesPerBuffer);
     gameLib.game_update_render(&backbuffer, keyboard, platformProcs, &permaMemory, &tempMemory, secondsElapsed);
+    char buf[1024];
+    sprintf(buf, "%lu [us], %.2f FPS\n", workMicroseconds, fps);
+    gameLib.debug_font_draw(&backbuffer, buf, 50.0f, 50.0f, 0, 0, 0);
     void* temp = backbuffer.buffer;
     XImage* tempImg = backimage;
     backbuffer.buffer = frontbuffer;
@@ -204,22 +213,27 @@ int main(int argc, char** argv)
     XPutImage(display, window, gc, frontimage, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION);
 
     tscEnd = x86_rdtsc();
+    tscWorkEnd = tscEnd;
     u64 tscDelta = tscEnd - tscLast;
     u64 microSecondsElapsed = (tscDelta * 1000 * 1000)/tscFreq;
+    u64 tscWorkDelta = tscWorkEnd - tscWorkLast;
+    workMicroseconds = (tscWorkDelta * 1000 * 1000)/tscFreq;
     secondsElapsed = (f32)tscDelta/(f32)tscFreq;
     //printf("%lu [us], %lf [s]\n", microSecondsElapsed, secondsElapsed);
 
 
-    if (microSecondsElapsed < TARGET_US_PER_FRAME)
+    if (workMicroseconds < TARGET_US_PER_FRAME)
     {
-      u64 remainingUs = TARGET_US_PER_FRAME - microSecondsElapsed;
+      u64 remainingUs = TARGET_US_PER_FRAME - workMicroseconds;
       usleep(remainingUs);
-      tscLast = x86_rdtsc();
     }
     else
     {
       printf("!!!!!Missing frame! %lu\n", microSecondsElapsed);
     }
+    tscWorkLast = x86_rdtsc();
+    fps = (f32)tscFreq/(f32)tscWorkDelta;
+    tscLast = tscEnd;
   }
 
   XCloseDisplay(display);

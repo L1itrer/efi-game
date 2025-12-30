@@ -169,7 +169,7 @@ int build_x11(Cmd* cmd, Procs* procs)
   cmd_append(cmd, "-shared", "-fPIC");
   cmd_append(cmd, "-fpic");
   cmd_append(cmd, "-nostdlib");
-  //cmd_append(cmd, "-O2");
+  cmd_append(cmd, "-O2");
   if (!cmd_run(cmd, .async = procs)) return 1;
   return 0;
 }
@@ -198,6 +198,7 @@ int main(int argc, char** argv)
     cmd_append(cmd, "./assets/fonts/Roboto-Regular.ttf");
     cmd_append(cmd, META_DIR "/roboto.h");
     cmd_append(cmd, "roboto");
+    cmd_append(cmd, "30");
     if (!cmd_run(cmd)) return 1;
   }
 

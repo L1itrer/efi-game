@@ -21,7 +21,7 @@ void usage(void)
 
 int main(int argc, char* argv[])
 {
-  if (argc < 4)
+  if (argc < 5)
   {
     usage();
     return 1;
@@ -30,10 +30,11 @@ int main(int argc, char* argv[])
   const char* input = argv[1];
   const char* output = argv[2];
   const char* fontName = argv[3];
+  int intHeight = atoi(argv[4]);
   Nob_String_Builder sb = {0};
   if (!nob_read_entire_file(input, &sb)) return 1;
 
-  float pixelHeight = 50.0f;
+  float pixelHeight = (float)intHeight;
 
   int res = stbtt_BakeFontBitmap((unsigned char*)sb.items, 0, pixelHeight, pixels, WIDTH, HEIGHT, START_CHAR, CHAR_COUNT, cdata);
 

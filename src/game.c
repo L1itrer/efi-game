@@ -2,12 +2,17 @@
 
 #include "../meta/roboto.h"
 #include <stdint.h>
+#include <stdarg.h>
 
 #ifndef ARENA_IMPLEMENTATION
 #define ARENA_IMPLEMENTATION
 #include "arena.h"
 #endif
 
+#ifndef STB_SPRINTF_IMPLEMENTATION
+#  define STB_SPRINTF_IMPLEMENTATION
+#include "thirdparty/stb/stb_sprintf.h"
+#endif
 
 internal const Direction directions[] = {
   (Direction){.x =  0, .y = -1},
@@ -18,6 +23,16 @@ internal const Direction directions[] = {
 
 internal PlatformProcs Gprocs = {0};
 internal Arena Gtemp = {0};
+
+char* tprintf(const char* fmt, ...)
+{
+  i32 count = 0;
+  va_list va;
+  va_start(va, fmt);
+  void* base = Gtemp.buffer + Gtemp.commited;
+  count = stbsp_vsnprintf(base, Gtemp.reserved - Gtemp.commited, fmt, va);
+  return arena_alloc(&Gtemp, count);
+}
 
 void game_update_level(GameState* state, Keyboard* keys)
 {
@@ -68,7 +83,7 @@ size_t strlen(const char* str)
   return len;
 }
 
-void debug_font_draw(Backbuffer* backbuffer, const char* str, f32 penX, f32 penY, u8 r, u8 g, u8 b)
+DEBUG_FONT_DRAW(debug_font_draw)
 {
   size_t len = strlen(str);
   for (size_t i = 0;i < len;++i)
@@ -129,9 +144,6 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     }
   }
   draw_rectangle(backbuffer, state->playerX * TILE_WIDTH_PIXELS+1, state->playerY * TILE_HEIGHT_PIXELS+1, TILE_WIDTH_PIXELS-1, TILE_HEIGHT_PIXELS-1, 0, 0xee, 0xee, 0xff);
-
-  const char* msg = "Hello, World!";
-  debug_font_draw(backbuffer, msg, 200.0f, 100.0f, 0x0, 0x0, 0x0);
 }
 
 
@@ -158,6 +170,7 @@ GAME_UPDATE_RENDER(game_update_render)
     // init
     gameState->playerX = 2;
     gameState->playerY = 3;
+    gameState->totalSeconds = 0;
     for (i32 y = 0;y < TILE_COUNT_HEIGHT;++y)
     {
       for (i32 x = 0;x < TILE_COUNT_WIDTH;++x)
@@ -178,6 +191,8 @@ GAME_UPDATE_RENDER(game_update_render)
   }
   game_update(gameState, &keyboard);
   game_draw(backbuffer, gameState);
+  gameState->totalSeconds += dt;
+  //debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds), 300.0f, 100.0f, 0x0, 0, 0);
 }
 
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a)
