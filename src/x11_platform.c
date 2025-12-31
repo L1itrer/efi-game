@@ -73,6 +73,7 @@ int main(int argc, char** argv)
   if (canUseTsc)
   {
     printf("Using rdtsc, frequency: %lu\n", tscFreq);
+    printf("freq = %lu\n", tscFreq);
   }
   X11GameLib gameLib = {0};
   x11_reload_game_dll(&gameLib);

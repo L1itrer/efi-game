@@ -149,9 +149,8 @@ void* memset(void* dest, int value, size_t count)
 }
 
 
-Keyboard efi_poll_keyboard(void)
+void efi_poll_keyboard(Keyboard* keyboard)
 {
-  Keyboard keyboard = {0};
   EfiInputKey key;
   EfiStatus result = EFI_SUCCESS;
   while (result == EFI_SUCCESS)
@@ -162,14 +161,13 @@ Keyboard efi_poll_keyboard(void)
       for (i32 i = 0;i < __KEY_COUNT;++i)
       {
         if ((key.scanCode == keyScanCodes[i]) && keyPrintable[i] == 0)
-          keyboard.key[i] = TRUE;
+          keyboard->key[i] = TRUE;
         else if (key.unicodeChar == keyPrintable[i] && keyScanCodes[i] == 0)
-          keyboard.key[i] = TRUE;
+          keyboard->key[i] = TRUE;
       }
     }
   }
   Gst->conIn->reset(Gst->conIn, 0);
-  return keyboard;
 }
 
 
@@ -292,19 +290,21 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   for (;;)
   {
     memset(backbuffer.buffer, 0, bytesPerBuffer);
-    keyboard = efi_poll_keyboard();
+    memset(&keyboard, 0, sizeof(keyboard));
+    efi_poll_keyboard(&keyboard);
     if (keyboard.key[KEY_CHAR_Q]) break;
-    game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory, 0.03f);
+    game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory, secondsElapsed);
     debug_font_draw(&backbuffer, canUseRdtscMsg, 50.0f, 50.0f, 0, 0, 0);
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;
-    status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, secondsElapsed);
-    u64 remainingUs;
+    status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, 0);
+    u64 remainingUs = 0;
     if (invariantArt)
     {
       // WARNING: THIS BRANCH ONLY CAN BE TESTED ON REAL HARDWARE
       // CRITICAL FOR IT TO WORK
+
       tscEnd = x86_rdtsc();
       tscWorkEnd = tscEnd;
       u64 tscDelta = tscEnd - tscLast;
@@ -312,7 +312,10 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
       //u64 microSecondsElapsed = (tscDelta * 1000 * 1000)/tscFreq;
       secondsElapsed = (f64)tscDelta/(f64)tscFreq;
       u64 workUs = (tscWorkDelta * 1000 * 1000)/tscFreq;
-      remainingUs = TARGET_US_PER_FRAME - workUs;
+      if (workUs < TARGET_US_PER_FRAME)
+      {
+        remainingUs = TARGET_US_PER_FRAME - workUs;
+      }
     }
     else remainingUs = 25000;
     if (EFI_ERROR(Gst->bootServices->stall(remainingUs)))
