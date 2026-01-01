@@ -49,13 +49,29 @@ char* tprintf(const char* fmt, ...)
 
 void game_update_level(GameState* state, Keyboard* keys)
 {
+  i32 directionIdx = -1;
   for (i32 dir = 0;dir < 4;++dir)
   {
     if (keys->key[dir])
     {
-      state->playerX += directions[dir].x;
-      state->playerY += directions[dir].y;
+      directionIdx = dir;
       break;
+    }
+  }
+  if (directionIdx != -1)
+  {
+    i32 requestedX = state->playerX + directions[directionIdx].x;
+    i32 requestedY = state->playerY + directions[directionIdx].y;
+    // if is in bounds
+    if (requestedX >= 0 && requestedX < TILE_COUNT_WIDTH && requestedY >= 0 && requestedY < TILE_COUNT_HEIGHT)
+    {
+      Tile requestedTile = state->tiles[requestedY * TILE_COUNT_WIDTH + requestedX];
+      if (requestedTile.tileKindEnum != TILE_WALL)
+      {
+        // allowed to move
+        state->playerX += directions[directionIdx].x;
+        state->playerY += directions[directionIdx].y;
+      }
     }
   }
 }
@@ -164,6 +180,53 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     state->playerY * TILE_HEIGHT_PIXELS+playerOffset,
     TILE_WIDTH_PIXELS-playerOffset*2, TILE_HEIGHT_PIXELS-playerOffset*2,
     0, 0xee, 0xee, 0xff
+  );
+
+  f32 drawableHeight = (f32)((f32)(TILE_COUNT_HEIGHT+1) * (f32)TILE_HEIGHT_PIXELS - (TILE_HEIGHT_PIXELS/2));
+  debug_font_draw(
+    backbuffer,
+    "drawable message",
+    50.0f,
+    drawableHeight,
+    0xde, 0xde, 0xde
+  );
+
+  // draw lines around the screen
+  // top line
+  draw_rectangle(
+    backbuffer,
+    1,
+    1,
+    HORIZONTAL_RESOLUTION-1,
+    1,
+    0x55, 0xdd, 0x88, 0xff
+  );
+  // right line
+  draw_rectangle(
+    backbuffer,
+    HORIZONTAL_RESOLUTION-1,
+    0,
+    1,
+    VERTICAL_RESOLUTION,
+    0x55, 0xdd, 0x88, 0xff
+  );
+  // bottom line
+  draw_rectangle(
+    backbuffer,
+    1,
+    VERTICAL_RESOLUTION-1,
+    HORIZONTAL_RESOLUTION-1,
+    1,
+    0x55, 0xdd, 0x88, 0xff
+  );
+  // left line
+  draw_rectangle(
+    backbuffer,
+    1,
+    1,
+    1,
+    VERTICAL_RESOLUTION-1,
+    0x55, 0xdd, 0x88, 0xff
   );
 }
 
