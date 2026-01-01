@@ -145,6 +145,10 @@ typedef struct Tile{
 #define TILE_WIDTH_PIXELS (HORIZONTAL_RESOLUTION / 16)
 #define TILE_HEIGHT_PIXELS (VERTICAL_RESOLUTION / 9)
 
+#define BOX_DIFF (10)
+#define BOX_WIDTH_PIXELS (TILE_WIDTH_PIXELS - (BOX_DIFF*2))
+#define BOX_HIEGHT_PIXELDS (TILE_HEIGHT_PIXELS - (BOX_DIFF*2))
+
 typedef struct GameState{
   f64 fixedUpdateCounter;
   bool32 initialized;

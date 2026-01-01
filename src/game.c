@@ -47,31 +47,56 @@ char* tprintf(const char* fmt, ...)
   return ptr;
 }
 
+bool32 xy_within_bounds(i32 x, i32 y)
+{
+  return x >= 0 && x < TILE_COUNT_WIDTH && y >= 0 && y < TILE_COUNT_HEIGHT;
+}
+
+void player_move(GameState* state, Direction direction)
+{
+  i32 requestedX = state->playerX + direction.x;
+  i32 requestedY = state->playerY + direction.y;
+  // if is in bounds
+  if (xy_within_bounds(requestedX, requestedY))
+  {
+    Tile requestedTile = state->tiles[requestedY * TILE_COUNT_WIDTH + requestedX];
+    if (requestedTile.tileKindEnum != TILE_WALL)
+    {
+      if (!requestedTile.hasBox)
+      {
+        // allowed to move
+        state->playerX += direction.x;
+        state->playerY += direction.y;
+      }
+      else
+      {
+        i32 nextX1 = requestedX+direction.x;
+        i32 nextY1 = requestedY+direction.y;
+        if (xy_within_bounds(nextX1, nextY1))
+        {
+          Tile* boxToMove1 = &state->tiles[(nextY1) * TILE_COUNT_WIDTH + (nextX1)];
+          if (boxToMove1->tileKindEnum != TILE_WALL && !boxToMove1->hasBox)
+          {
+            // allowed to push the box
+            state->tiles[requestedY * TILE_COUNT_WIDTH + requestedX].hasBox = FALSE;
+            boxToMove1->hasBox = TRUE;
+            state->playerX += direction.x;
+            state->playerY += direction.y;
+          }
+        }
+      }
+    }
+  }
+}
+
 void game_update_level(GameState* state, Keyboard* keys)
 {
-  i32 directionIdx = -1;
   for (i32 dir = 0;dir < 4;++dir)
   {
     if (keys->key[dir])
     {
-      directionIdx = dir;
+      player_move(state, directions[dir]);
       break;
-    }
-  }
-  if (directionIdx != -1)
-  {
-    i32 requestedX = state->playerX + directions[directionIdx].x;
-    i32 requestedY = state->playerY + directions[directionIdx].y;
-    // if is in bounds
-    if (requestedX >= 0 && requestedX < TILE_COUNT_WIDTH && requestedY >= 0 && requestedY < TILE_COUNT_HEIGHT)
-    {
-      Tile requestedTile = state->tiles[requestedY * TILE_COUNT_WIDTH + requestedX];
-      if (requestedTile.tileKindEnum != TILE_WALL)
-      {
-        // allowed to move
-        state->playerX += directions[directionIdx].x;
-        state->playerY += directions[directionIdx].y;
-      }
     }
   }
 }
@@ -156,12 +181,32 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
       i32 pixelX = x * TILE_WIDTH_PIXELS;
       i32 pixelY = y * TILE_HEIGHT_PIXELS;
       i32 cord = x + y * TILE_COUNT_WIDTH;
-      switch (state->tiles[cord].tileKindEnum)
+      Tile tile = state->tiles[cord];
+      switch (tile.tileKindEnum)
       {
         case TILE_NORMAL:
           {
-            //tile_draw(backbuffer, 1, 1, 0x18, 0x18, 0x18, 0xff);
-            draw_rectangle(backbuffer, pixelX+1, pixelY+1, TILE_WIDTH_PIXELS-1, TILE_HEIGHT_PIXELS-1, 0, 0x88, 0x88, 0xff);
+            // draw the tile
+            draw_rectangle(
+              backbuffer,
+              pixelX+1,
+              pixelY+1,
+              TILE_WIDTH_PIXELS-1,
+              TILE_HEIGHT_PIXELS-1,
+              0, 0x88, 0x88, 0xff
+            );
+            // draw box
+            if (tile.hasBox)
+            {
+              draw_rectangle(
+                backbuffer,
+                pixelX + BOX_DIFF,
+                pixelY + BOX_DIFF,
+                BOX_WIDTH_PIXELS,
+                BOX_HIEGHT_PIXELDS,
+                0xff, 0xee, 0x55, 0xff
+              );
+            }
             break;
           }
         case TILE_WALL:
@@ -282,6 +327,10 @@ GAME_UPDATE_RENDER(game_update_render)
         }
       }
     }
+
+    gameState->tiles[19].hasBox = TRUE;
+    gameState->tiles[25].hasBox = TRUE;
+    gameState->tiles[43].hasBox = TRUE;
 
     gameState->initialized = TRUE;
   }
