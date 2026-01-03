@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 
   nob_sb_appendf(&sb, "#define %s_WIDTH %d\n", fontName, WIDTH);
   nob_sb_appendf(&sb, "#define %s_HEIGHT %d\n", fontName, res);
-  nob_sb_appendf(&sb, "unsigned char %s_pixels[] = {\n", fontName);
+  nob_sb_appendf(&sb, "const unsigned char %s_pixels[] = {\n", fontName);
   for (int y = 0;y < res;++y)
   {
     for (int x = 0;x < WIDTH;++x)
