@@ -14,6 +14,8 @@
 #  include "thirdparty/stb/stb_sprintf.h"
 #endif
 
+#include "levels.c"
+
 internal const Direction directions[] = {
   (Direction){.x =  0, .y = -1},
   (Direction){.x = -1, .y =  0},
@@ -54,19 +56,20 @@ bool32 xy_within_bounds(i32 x, i32 y)
 
 void player_move(GameState* state, Direction direction)
 {
-  i32 requestedX = state->playerX + direction.x;
-  i32 requestedY = state->playerY + direction.y;
+  GameLevel* level = &state->level;
+  i32 requestedX = level->playerX + direction.x;
+  i32 requestedY = level->playerY + direction.y;
   // if is in bounds
   if (xy_within_bounds(requestedX, requestedY))
   {
-    Tile requestedTile = state->tiles[requestedY * TILE_COUNT_WIDTH + requestedX];
+    Tile requestedTile = level->tiles[requestedY * TILE_COUNT_WIDTH + requestedX];
     if (requestedTile.tileKindEnum != TILE_WALL)
     {
       if (!requestedTile.hasBox)
       {
         // allowed to move
-        state->playerX += direction.x;
-        state->playerY += direction.y;
+        level->playerX += direction.x;
+        level->playerY += direction.y;
       }
       else
       {
@@ -74,14 +77,14 @@ void player_move(GameState* state, Direction direction)
         i32 nextY1 = requestedY+direction.y;
         if (xy_within_bounds(nextX1, nextY1))
         {
-          Tile* boxToMove1 = &state->tiles[(nextY1) * TILE_COUNT_WIDTH + (nextX1)];
+          Tile* boxToMove1 = &level->tiles[(nextY1) * TILE_COUNT_WIDTH + (nextX1)];
           if (boxToMove1->tileKindEnum != TILE_WALL && !boxToMove1->hasBox)
           {
             // allowed to push the box
-            state->tiles[requestedY * TILE_COUNT_WIDTH + requestedX].hasBox = FALSE;
+            level->tiles[requestedY * TILE_COUNT_WIDTH + requestedX].hasBox = FALSE;
             boxToMove1->hasBox = TRUE;
-            state->playerX += direction.x;
-            state->playerY += direction.y;
+            level->playerX += direction.x;
+            level->playerY += direction.y;
           }
         }
       }
@@ -105,19 +108,21 @@ void game_update_level(GameState* state, Keyboard* keys)
   {
     for (i32 x = 0;x < TILE_COUNT_WIDTH;++x)
     {
-      Tile currTile = state->tiles[y * TILE_COUNT_WIDTH + x];
-      if (currTile.tileKindEnum == TILE_NORMAL_CORRRECT)
+      Tile currTile = state->level.tiles[y * TILE_COUNT_WIDTH + x];
+      if (currTile.tileKindEnum == TILE_CORR)
       {
         if (currTile.hasBox) correctCounter += 1;
       }
     }
   }
-  state->currCorrectCounter = correctCounter;
-  state->gameWon = (correctCounter == state->currRequiredCounter);
+  state->level.currCorrectBoxes = correctCounter;
+  state->gameWon = (correctCounter == state->level.requiredBoxesCount);
 }
 
-void game_update(GameState* state, Keyboard* keyboard)
+void game_update(GameState* state, Keyboard* keyboard, f64 dt)
 {
+  state->fixedUpdateCounter += dt;
+  state->totalSeconds += dt;
   switch (state->gameSceneEnum)
   {
     case SCENE_LEVEL:
@@ -213,10 +218,10 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
       i32 pixelX = x * TILE_WIDTH_PIXELS;
       i32 pixelY = y * TILE_HEIGHT_PIXELS;
       i32 cord = x + y * TILE_COUNT_WIDTH;
-      Tile tile = state->tiles[cord];
+      Tile tile = state->level.tiles[cord];
       switch (tile.tileKindEnum)
       {
-        case TILE_NORMAL:
+        case TILE_NORM:
           {
             // draw the tile
             draw_rectangle(
@@ -239,7 +244,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
             tile_draw(backbuffer, x, y, COLOR_WALL);
             break;
           }
-        case TILE_NORMAL_CORRRECT:
+        case TILE_CORR:
           {
             if (tile.hasBox)
             {
@@ -274,8 +279,8 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
   i32 playerOffset = 2 + state->playerAnim;
   draw_rectangle(
     backbuffer,
-    state->playerX * TILE_WIDTH_PIXELS+playerOffset,
-    state->playerY * TILE_HEIGHT_PIXELS+playerOffset,
+    state->level.playerX * TILE_WIDTH_PIXELS+playerOffset,
+    state->level.playerY * TILE_HEIGHT_PIXELS+playerOffset,
     TILE_WIDTH_PIXELS-playerOffset*2, TILE_HEIGHT_PIXELS-playerOffset*2,
     COLOR_PLAYER
   );
@@ -296,8 +301,8 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
   debug_font_draw(
     backbuffer,
     tprintf("correct boxes %d/%d",
-            state->currCorrectCounter,
-            state->currRequiredCounter
+            state->level.currCorrectBoxes,
+            state->level.requiredBoxesCount
             ),
     400.0f,
     drawableHeight,
@@ -358,6 +363,13 @@ void fixed_update(GameState* state)
   else if (state->playerAnim <= 0) state->increasing = !state->increasing;
 }
 
+void game_init(GameState* state)
+{
+  state->totalSeconds = 0;
+  state->initialized = TRUE;
+  state->level = levels_data[0];
+}
+
 // ENTRY POINT
 GAME_UPDATE_RENDER(game_update_render)
 {
@@ -377,44 +389,15 @@ GAME_UPDATE_RENDER(game_update_render)
   if (!gameState->initialized)
   {
     // init
-    gameState->playerX = 2;
-    gameState->playerY = 3;
-    gameState->totalSeconds = 0;
-    for (i32 y = 0;y < TILE_COUNT_HEIGHT;++y)
-    {
-      for (i32 x = 0;x < TILE_COUNT_WIDTH;++x)
-      {
-        i32 cord = x + y * TILE_COUNT_WIDTH;
-        if (y == 0 || y == TILE_COUNT_HEIGHT-1)
-        {
-          gameState->tiles[cord] = (Tile){.tileKindEnum = TILE_WALL};
-        }
-        else
-        {
-          gameState->tiles[cord] = (Tile){.tileKindEnum = TILE_NORMAL};
-        }
-      }
-    }
-
-    gameState->tiles[2 * TILE_COUNT_WIDTH + 4].hasBox = TRUE;
-    gameState->tiles[2 * TILE_COUNT_WIDTH + 6].tileKindEnum = TILE_NORMAL_CORRRECT;
-    gameState->tiles[5 * TILE_COUNT_WIDTH + 1].hasBox = TRUE;
-    gameState->tiles[5 * TILE_COUNT_WIDTH + 3].tileKindEnum = TILE_NORMAL_CORRRECT;
-    gameState->tiles[4 * TILE_COUNT_WIDTH + 9].hasBox = TRUE;
-    gameState->tiles[4 * TILE_COUNT_WIDTH + 12].tileKindEnum = TILE_NORMAL_CORRRECT;
-
-    gameState->currRequiredCounter = 3;
-    gameState->initialized = TRUE;
+    game_init(gameState);
   }
-  game_update(gameState, &keyboard);
-  gameState->fixedUpdateCounter += dt;
+  game_update(gameState, &keyboard, dt);
   if (gameState->fixedUpdateCounter >= FIXED_UPDATE_RATE_SECONDS)
   {
     gameState->fixedUpdateCounter -= FIXED_UPDATE_RATE_SECONDS;
     fixed_update(gameState);
   }
   game_draw(backbuffer, gameState);
-  gameState->totalSeconds += dt;
   debug_font_draw(
     backbuffer,
       tprintf(
@@ -422,7 +405,7 @@ GAME_UPDATE_RENDER(game_update_render)
         gameState->totalSeconds
     ), 
     300.0f, 100.0f,
-    COLOR_PURE_BLACK
+    COLOR_PURE_WHITE
   );
 }
 

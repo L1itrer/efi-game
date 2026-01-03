@@ -146,9 +146,9 @@ typedef enum GameScene{
 }GameScene;
 
 typedef enum TileKind{
-  TILE_NORMAL,
+  TILE_NORM,
   TILE_WALL,
-  TILE_NORMAL_CORRRECT,
+  TILE_CORR,
   __TILE_COUNT
 }TileKind;
 
@@ -167,19 +167,24 @@ typedef struct Tile{
 #define BOX_WIDTH_PIXELS (TILE_WIDTH_PIXELS - (BOX_DIFF*2))
 #define BOX_HIEGHT_PIXELDS (TILE_HEIGHT_PIXELS - (BOX_DIFF*2))
 
-typedef struct GameState{
+typedef struct GameLevel{
   Tile tiles[TILE_COUNT_WIDTH * TILE_COUNT_HEIGHT];
-  f64 fixedUpdateCounter;
-  bool32 initialized;
-  i32 gameSceneEnum;
+  const char* name;
   i32 playerX;
   i32 playerY;
-  i32 playerAnim;
+  i32 currCorrectBoxes;
+  i32 requiredBoxesCount;
+}GameLevel;
+
+typedef struct GameState{
+  GameLevel level;
+  bool32 initialized;
+  f64 fixedUpdateCounter;
+  i32 gameSceneEnum;
   f32 totalSeconds;
+  i32 playerAnim;
   bool32 increasing;
   bool32 gameWon;
-  i32 currCorrectCounter;
-  i32 currRequiredCounter;
 }GameState;
 
 typedef struct Direction{
