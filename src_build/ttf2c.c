@@ -56,11 +56,23 @@ int main(int argc, char* argv[])
 
   nob_sb_appendf(&sb, "#ifndef FONT_CDATA\n");
   nob_sb_appendf(&sb, "#define FONT_CDATA\n\n");
+  nob_sb_appendf(&sb, "#include <stdint.h>\n");
+  nob_sb_appendf(&sb, "#include <stddef.h>\n");
 
   nob_sb_appendf(&sb, "typedef struct CharData{\n");
   nob_sb_appendf(&sb, "  unsigned short x0,y0,x1,y1;\n");
   nob_sb_appendf(&sb, "  float xoff,yoff,xadvance;\n");
-  nob_sb_appendf(&sb, "}CharData;\n");
+  nob_sb_appendf(&sb, "}CharData;\n\n");
+
+  nob_sb_appendf(&sb, "typedef struct Font{\n");
+  nob_sb_appendf(&sb, "  int ccount;\n");
+  nob_sb_appendf(&sb, "  int startChar;\n");
+  nob_sb_appendf(&sb, "  CharData* cdata;\n");
+  nob_sb_appendf(&sb, "  unsigned char* pixels;\n");
+  nob_sb_appendf(&sb, "  size_t width;\n");
+  nob_sb_appendf(&sb, "  size_t height;\n");
+  nob_sb_appendf(&sb, "}Font;\n\n");
+
   nob_sb_appendf(&sb, "#endif //FONT_CDATA\n\n");
 
   nob_sb_appendf(&sb, "#define %s_START_CHAR %d\n", fontName, START_CHAR);
@@ -76,7 +88,7 @@ int main(int argc, char* argv[])
 
   nob_sb_appendf(&sb, "#define %s_WIDTH %d\n", fontName, WIDTH);
   nob_sb_appendf(&sb, "#define %s_HEIGHT %d\n", fontName, res);
-  nob_sb_appendf(&sb, "const unsigned char %s_pixels[] = {\n", fontName);
+  nob_sb_appendf(&sb, "unsigned char %s_pixels[] = {\n", fontName);
   for (int y = 0;y < res;++y)
   {
     for (int x = 0;x < WIDTH;++x)
@@ -86,6 +98,15 @@ int main(int argc, char* argv[])
     nob_sb_appendf(&sb, "\n");
   }
 
+  nob_sb_appendf(&sb, "};\n\n");
+
+  nob_sb_appendf(&sb, "Font G%sFont = {\n", fontName);
+  nob_sb_appendf(&sb, "  .ccount = %d,\n", CHAR_COUNT);
+  nob_sb_appendf(&sb, "  .startChar = %d,\n", START_CHAR);
+  nob_sb_appendf(&sb, "  .cdata = %s_cdata,\n", fontName);
+  nob_sb_appendf(&sb, "  .pixels = %s_pixels,\n", fontName);
+  nob_sb_appendf(&sb, "  .width = %zu,\n", (size_t)WIDTH);
+  nob_sb_appendf(&sb, "  .height = %zu,\n", (size_t)res);
   nob_sb_appendf(&sb, "};\n");
   nob_sb_appendf(&sb, "#endif //%s_FONT\n", fontName);
   nob_write_entire_file(output, sb.items, sb.count);

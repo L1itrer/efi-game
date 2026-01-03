@@ -152,12 +152,12 @@ size_t strlen(const char* str)
   return len;
 }
 
-DEBUG_FONT_DRAW(debug_font_draw)
+void draw_text(Font* font, Backbuffer* backbuffer, const char* str, f32 penX, f32 penY, Color color)
 {
   size_t len = strlen(str);
   for (size_t i = 0;i < len;++i)
   {
-    CharData cdata = roboto_cdata[str[i] - roboto_START_CHAR];
+    CharData cdata = font->cdata[str[i] - font->startChar];
     for (i32 dy = cdata.y0;dy < cdata.y1;++dy)
     {
       i32 y = (i32)penY + dy - cdata.y0 + cdata.yoff;
@@ -166,7 +166,7 @@ DEBUG_FONT_DRAW(debug_font_draw)
         for (i32 dx = cdata.x0;dx < cdata.x1;++dx)
         {
           i32 x = (i32)penX + dx - cdata.x0 + cdata.xoff;
-          u32 intensity = roboto_pixels[dy * roboto_WIDTH + dx];
+          u32 intensity = font->pixels[dy * font->width + dx];
           i32 index = y * backbuffer->pixelsPerLine + x;
           if (x < (i32)backbuffer->pixelsPerLine && x >= 0)
           {
@@ -184,6 +184,11 @@ DEBUG_FONT_DRAW(debug_font_draw)
     }
     penX += cdata.xadvance;
   }
+}
+
+DEBUG_FONT_DRAW(debug_font_draw)
+{
+  draw_text(&GrobotoFont, backbuffer, str, penX, penY, color);
 }
 
 void draw_box(Backbuffer* backbuffer, i32 x, i32 y)
