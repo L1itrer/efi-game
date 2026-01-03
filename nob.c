@@ -211,6 +211,15 @@ int main(int argc, char** argv)
     cmd_append(cmd, "30");
     if (!cmd_run(cmd)) return 1;
   }
+  if (needs_rebuild1(META_DIR "/roboto_small.h", SRC_BUILD_DIR "/ttf2c.c"))
+  {
+    cmd_append(cmd, BUILD_DIR "/ttf2c");
+    cmd_append(cmd, "./assets/fonts/Roboto-Regular.ttf");
+    cmd_append(cmd, META_DIR "/roboto_small.h");
+    cmd_append(cmd, "roboto_small");
+    cmd_append(cmd, "20");
+    if (!cmd_run(cmd)) return 1;
+  }
 
   compiler(cmd);
   cflags(cmd, true);
