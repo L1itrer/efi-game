@@ -116,7 +116,6 @@ typedef DEBUG_FONT_DRAW(DebugFontDraw);
 DEBUG_FONT_DRAW(debug_font_draw);
 
 
-void fill_backbuffer(Backbuffer backbuffer);
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a);
 void clear_background(Backbuffer* backbuffer, u8 r, u8 g, u8 b);
 
@@ -150,6 +149,7 @@ typedef struct Tile{
 #define BOX_HIEGHT_PIXELDS (TILE_HEIGHT_PIXELS - (BOX_DIFF*2))
 
 typedef struct GameState{
+  Tile tiles[TILE_COUNT_WIDTH * TILE_COUNT_HEIGHT];
   f64 fixedUpdateCounter;
   bool32 initialized;
   i32 gameSceneEnum;
@@ -157,8 +157,10 @@ typedef struct GameState{
   i32 playerY;
   i32 playerAnim;
   f32 totalSeconds;
-  Tile tiles[TILE_COUNT_WIDTH * TILE_COUNT_HEIGHT];
   bool32 increasing;
+  bool32 gameWon;
+  i32 currCorrectCounter;
+  i32 currRequiredCounter;
 }GameState;
 
 typedef struct Direction{

@@ -5,13 +5,13 @@
 #include <stdarg.h>
 
 #ifndef ARENA_IMPLEMENTATION
-#define ARENA_IMPLEMENTATION
-#include "arena.h"
+#  define ARENA_IMPLEMENTATION
+#  include "arena.h"
 #endif
 
 #ifndef STB_SPRINTF_IMPLEMENTATION
 #  define STB_SPRINTF_IMPLEMENTATION
-#include "thirdparty/stb/stb_sprintf.h"
+#  include "thirdparty/stb/stb_sprintf.h"
 #endif
 
 internal const Direction directions[] = {
@@ -99,6 +99,21 @@ void game_update_level(GameState* state, Keyboard* keys)
       break;
     }
   }
+  i32 correctCounter = 0;
+
+  for (i32 y = 0;y < TILE_COUNT_HEIGHT;++y)
+  {
+    for (i32 x = 0;x < TILE_COUNT_WIDTH;++x)
+    {
+      Tile currTile = state->tiles[y * TILE_COUNT_WIDTH + x];
+      if (currTile.tileKindEnum == TILE_NORMAL_CORRRECT)
+      {
+        if (currTile.hasBox) correctCounter += 1;
+      }
+    }
+  }
+  state->currCorrectCounter = correctCounter;
+  state->gameWon = (correctCounter == state->currRequiredCounter);
 }
 
 void game_update(GameState* state, Keyboard* keyboard)
@@ -171,6 +186,18 @@ DEBUG_FONT_DRAW(debug_font_draw)
   }
 }
 
+void draw_box(Backbuffer* backbuffer, i32 x, i32 y)
+{
+  draw_rectangle(
+    backbuffer,
+    x + BOX_DIFF,
+    y + BOX_DIFF,
+    BOX_WIDTH_PIXELS,
+    BOX_HIEGHT_PIXELDS,
+    0xff, 0xee, 0x55, 0xff
+  );
+}
+
 void game_draw(Backbuffer* backbuffer, GameState* state)
 {
   clear_background(backbuffer, 0, 0, 0);
@@ -198,20 +225,41 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
             // draw box
             if (tile.hasBox)
             {
-              draw_rectangle(
-                backbuffer,
-                pixelX + BOX_DIFF,
-                pixelY + BOX_DIFF,
-                BOX_WIDTH_PIXELS,
-                BOX_HIEGHT_PIXELDS,
-                0xff, 0xee, 0x55, 0xff
-              );
+              draw_box(backbuffer, pixelX, pixelY);
             }
             break;
           }
         case TILE_WALL:
           {
-            tile_draw(backbuffer, x, y, 0xff, 0, 0, 0xff);
+            tile_draw(backbuffer, x, y, 0x88, 0x88, 0x88, 0xff);
+            break;
+          }
+        case TILE_NORMAL_CORRRECT:
+          {
+            if (tile.hasBox)
+            {
+              // draw green tile
+              draw_rectangle(
+                backbuffer,
+                pixelX+1,
+                pixelY+1,
+                TILE_WIDTH_PIXELS-1,
+                TILE_HEIGHT_PIXELS-1,
+                0x88, 0xff, 0x88, 0xff
+              );
+              draw_box(backbuffer, pixelX, pixelY);
+            }
+            else
+            {
+              draw_rectangle(
+                backbuffer,
+                pixelX+1,
+                pixelY+1,
+                TILE_WIDTH_PIXELS-1,
+                TILE_HEIGHT_PIXELS-1,
+                0xff, 0x55, 0x55, 0xff
+              );
+            }
             break;
           }
       }
@@ -234,6 +282,31 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     50.0f,
     drawableHeight,
     0xde, 0xde, 0xde
+  );
+
+  // draw current boxes
+  u8 r, g, b;
+  if (state->gameWon)
+  {
+    r = 0x88;
+    g = 0xff;
+    b = 0x88;
+  }
+  else
+  {
+    r = 0xff;
+    g = 0xff;
+    b = 0xff;
+  }
+  debug_font_draw(
+    backbuffer,
+    tprintf("correct boxes %d/%d",
+            state->currCorrectCounter,
+            state->currRequiredCounter
+            ),
+    400.0f,
+    drawableHeight,
+    r, g, b
   );
 
   // draw lines around the screen
@@ -328,10 +401,14 @@ GAME_UPDATE_RENDER(game_update_render)
       }
     }
 
-    gameState->tiles[19].hasBox = TRUE;
-    gameState->tiles[25].hasBox = TRUE;
-    gameState->tiles[43].hasBox = TRUE;
+    gameState->tiles[2 * TILE_COUNT_WIDTH + 4].hasBox = TRUE;
+    gameState->tiles[2 * TILE_COUNT_WIDTH + 6].tileKindEnum = TILE_NORMAL_CORRRECT;
+    gameState->tiles[5 * TILE_COUNT_WIDTH + 1].hasBox = TRUE;
+    gameState->tiles[5 * TILE_COUNT_WIDTH + 3].tileKindEnum = TILE_NORMAL_CORRRECT;
+    gameState->tiles[4 * TILE_COUNT_WIDTH + 9].hasBox = TRUE;
+    gameState->tiles[4 * TILE_COUNT_WIDTH + 12].tileKindEnum = TILE_NORMAL_CORRRECT;
 
+    gameState->currRequiredCounter = 3;
     gameState->initialized = TRUE;
   }
   game_update(gameState, &keyboard);
