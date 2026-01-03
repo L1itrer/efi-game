@@ -92,7 +92,7 @@ void player_move(GameState* state, Direction direction)
   }
 }
 
-void game_update_level(GameState* state, Keyboard* keys)
+void game_level_update(GameState* state, Keyboard* keys)
 {
   for (i32 dir = 0;dir < 4;++dir)
   {
@@ -119,6 +119,35 @@ void game_update_level(GameState* state, Keyboard* keys)
   state->gameWon = (correctCounter == state->level.requiredBoxesCount);
 }
 
+
+void game_level_switch(GameState* state, u32 levelIdx)
+{
+  state->currSelection = 0;
+  state->gameSceneEnum = SCENE_LEVEL;
+  state->gameWon = FALSE;
+  state->level = Glevels_data[levelIdx];
+  state->playerAnim = 0;
+}
+
+void game_level_select_update(GameState* state, Keyboard* keyboard)
+{
+  i32 count = Arrlen(Glevels_data);
+  if (keyboard->key[KEY_UP]) 
+  {
+    state->currSelection = (state->currSelection+1) % count;
+    return;
+  }
+  if (keyboard->key[KEY_DOWN])
+  {
+    state->currSelection = (state->currSelection-1) % count;
+    return;
+  }
+  if (keyboard->key[KEY_ENTER] || keyboard->key[KEY_CHAR_Z])
+  {
+    game_level_switch(state, state->currSelection);
+  }
+}
+
 void game_update(GameState* state, Keyboard* keyboard, f64 dt)
 {
   state->fixedUpdateCounter += dt;
@@ -127,7 +156,12 @@ void game_update(GameState* state, Keyboard* keyboard, f64 dt)
   {
     case SCENE_LEVEL:
       {
-        game_update_level(state, keyboard);
+        game_level_update(state, keyboard);
+        break;
+      }
+    case SCENE_LEVEL_SELECT:
+      {
+        game_level_select_update(state, keyboard);
         break;
       }
     case SCENE_MENU:
@@ -208,7 +242,8 @@ void draw_box(Backbuffer* backbuffer, i32 x, i32 y)
   );
 }
 
-void game_draw(Backbuffer* backbuffer, GameState* state)
+
+internal void game_level_draw(Backbuffer* backbuffer, GameState* state)
 {
   clear_background(backbuffer, 0, 0, 0);
   for (i32 y = 0;y < TILE_COUNT_HEIGHT;++y)
@@ -249,13 +284,17 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
             if (tile.hasBox)
             {
               // draw green tile
+              Color color = COLOR_GREEN;
+              color.g += state->playerAnim;
+              color.r += state->playerAnim;
+              color.g += state->playerAnim;
               draw_rectangle(
                 backbuffer,
                 pixelX+1,
                 pixelY+1,
                 TILE_WIDTH_PIXELS-1,
                 TILE_HEIGHT_PIXELS-1,
-                COLOR_GREEN
+                color
               );
               draw_box(backbuffer, pixelX, pixelY);
             }
@@ -349,6 +388,48 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
 }
 
 
+void game_level_select_draw(Backbuffer* backbuffer, GameState* state)
+{
+  Font* font = &GrobotoFont;
+  f32 yStart = 100.0f;
+  i32 count = Arrlen(Glevels_data);
+  for (i32 i = 0;i < count;++i)
+  {
+    Color c = ((u32)i == state->currSelection) ? COLOR_YELLOW : COLOR_WHITE;
+    draw_text(
+      font,
+      backbuffer,
+      Glevels_data[i].name,
+      50.0f,
+      yStart + (f32)i*50.0f,
+      c
+    );
+  }
+}
+
+void game_draw(Backbuffer* backbuffer, GameState* state)
+{
+  switch (state->gameSceneEnum)
+  {
+    case SCENE_LEVEL:
+      {
+        game_level_draw(backbuffer, state);
+        break;
+      }
+    case SCENE_LEVEL_SELECT:
+      {
+        game_level_select_draw(backbuffer, state);
+        break;
+      }
+    case SCENE_MENU:
+      {
+        // TODO:
+        break;
+      }
+  }
+}
+
+
 void fixed_update(GameState* state)
 {
   if (!state->increasing)
@@ -366,8 +447,10 @@ void fixed_update(GameState* state)
 void game_init(GameState* state)
 {
   state->totalSeconds = 0;
+  state->level = Glevels_data[1];
+  state->currLevelIndex = 1;
+  state->gameSceneEnum = SCENE_LEVEL_SELECT;
   state->initialized = TRUE;
-  state->level = levels_data[0];
 }
 
 // ENTRY POINT
@@ -398,15 +481,15 @@ GAME_UPDATE_RENDER(game_update_render)
     fixed_update(gameState);
   }
   game_draw(backbuffer, gameState);
-  debug_font_draw(
-    backbuffer,
-      tprintf(
-        "Seconds %.2f",
-        gameState->totalSeconds
-    ), 
-    300.0f, 100.0f,
-    COLOR_PURE_WHITE
-  );
+  //debug_font_draw(
+  //  backbuffer,
+  //    tprintf(
+  //      "Seconds %.2f",
+  //      gameState->totalSeconds
+  //  ), 
+  //  300.0f, 100.0f,
+  //  COLOR_PURE_WHITE
+  //);
 }
 
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, Color color)

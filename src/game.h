@@ -40,6 +40,8 @@ typedef double f64;
 #define Megabytes(n) (Kilobytes(n)*1024LL)
 #define Gigabytes(n) (Megabytes(n)*1024LL)
 
+#define Arrlen(arr) (sizeof(arr)/sizeof(arr[0]))
+
 typedef struct Backbuffer {
   void* buffer;
   u32 pixelsPerLine;
@@ -142,6 +144,7 @@ void clear_background(Backbuffer* backbuffer, u8 r, u8 g, u8 b);
 typedef enum GameScene{
   SCENE_LEVEL,
   SCENE_MENU,
+  SCENE_LEVEL_SELECT,
   __SCENE_COUNT
 }GameScene;
 
@@ -178,13 +181,16 @@ typedef struct GameLevel{
 
 typedef struct GameState{
   GameLevel level;
-  bool32 initialized;
   f64 fixedUpdateCounter;
+  i32 currLevelIndex;
+  bool32 initialized;
   i32 gameSceneEnum;
   f32 totalSeconds;
   i32 playerAnim;
   bool32 increasing;
   bool32 gameWon;
+  // level select stuff
+  u32 currSelection;
 }GameState;
 
 typedef struct Direction{
