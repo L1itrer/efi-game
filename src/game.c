@@ -133,11 +133,11 @@ void game_update(GameState* state, Keyboard* keyboard)
   }
 }
 
-void tile_draw(Backbuffer* backbuffer, i32 x, i32 y, u8 r, u8 g, u8 b, u8 a)
+void tile_draw(Backbuffer* backbuffer, i32 x, i32 y, Color color)
 {
   i32 pixelX = x * TILE_WIDTH_PIXELS;
   i32 pixelY = y * TILE_HEIGHT_PIXELS;
-  draw_rectangle(backbuffer, pixelX, pixelY, TILE_WIDTH_PIXELS, TILE_HEIGHT_PIXELS, r, g, b, a);
+  draw_rectangle(backbuffer, pixelX, pixelY, TILE_WIDTH_PIXELS, TILE_HEIGHT_PIXELS, color);
 }
 
 size_t strlen(const char* str)
@@ -175,9 +175,9 @@ DEBUG_FONT_DRAW(debug_font_draw)
             u32 currR = ((*pixel >> backbuffer->redShift) & 0x000000ff);
             u32 currG = ((*pixel >> backbuffer->greenShift) & 0x000000ff);
             *pixel = 0;
-            *pixel |= ((currB * (255 - intensity) + b * intensity)/255) << backbuffer->blueShift;
-            *pixel |= ((currG * (255 - intensity) + g * intensity)/255) << backbuffer->greenShift;
-            *pixel |= ((currR * (255 - intensity) + r * intensity)/255) << backbuffer->redShift;
+            *pixel |= ((currB * (255 - intensity) + color.b * intensity)/255) << backbuffer->blueShift;
+            *pixel |= ((currG * (255 - intensity) + color.g * intensity)/255) << backbuffer->greenShift;
+            *pixel |= ((currR * (255 - intensity) + color.r * intensity)/255) << backbuffer->redShift;
           }
       }
       }
@@ -194,7 +194,7 @@ void draw_box(Backbuffer* backbuffer, i32 x, i32 y)
     y + BOX_DIFF,
     BOX_WIDTH_PIXELS,
     BOX_HIEGHT_PIXELDS,
-    0xff, 0xee, 0x55, 0xff
+    COLOR_BOX
   );
 }
 
@@ -220,7 +220,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
               pixelY+1,
               TILE_WIDTH_PIXELS-1,
               TILE_HEIGHT_PIXELS-1,
-              0, 0x88, 0x88, 0xff
+              COLOR_TILE
             );
             // draw box
             if (tile.hasBox)
@@ -231,7 +231,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
           }
         case TILE_WALL:
           {
-            tile_draw(backbuffer, x, y, 0x88, 0x88, 0x88, 0xff);
+            tile_draw(backbuffer, x, y, COLOR_WALL);
             break;
           }
         case TILE_NORMAL_CORRRECT:
@@ -245,7 +245,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
                 pixelY+1,
                 TILE_WIDTH_PIXELS-1,
                 TILE_HEIGHT_PIXELS-1,
-                0x88, 0xff, 0x88, 0xff
+                COLOR_GREEN
               );
               draw_box(backbuffer, pixelX, pixelY);
             }
@@ -257,7 +257,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
                 pixelY+1,
                 TILE_WIDTH_PIXELS-1,
                 TILE_HEIGHT_PIXELS-1,
-                0xff, 0x55, 0x55, 0xff
+                COLOR_RED
               );
             }
             break;
@@ -272,7 +272,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     state->playerX * TILE_WIDTH_PIXELS+playerOffset,
     state->playerY * TILE_HEIGHT_PIXELS+playerOffset,
     TILE_WIDTH_PIXELS-playerOffset*2, TILE_HEIGHT_PIXELS-playerOffset*2,
-    0, 0xee, 0xee, 0xff
+    COLOR_PLAYER
   );
 
   f32 drawableHeight = (f32)((f32)(TILE_COUNT_HEIGHT+1) * (f32)TILE_HEIGHT_PIXELS - (TILE_HEIGHT_PIXELS/2));
@@ -281,23 +281,13 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     "drawable message",
     50.0f,
     drawableHeight,
-    0xde, 0xde, 0xde
+    COLOR_WHITE
   );
 
   // draw current boxes
-  u8 r, g, b;
-  if (state->gameWon)
-  {
-    r = 0x88;
-    g = 0xff;
-    b = 0x88;
-  }
-  else
-  {
-    r = 0xff;
-    g = 0xff;
-    b = 0xff;
-  }
+  Color color;
+  if (state->gameWon) color = COLOR_GREEN;
+  else color = COLOR_PURE_WHITE;
   debug_font_draw(
     backbuffer,
     tprintf("correct boxes %d/%d",
@@ -306,7 +296,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
             ),
     400.0f,
     drawableHeight,
-    r, g, b
+    color
   );
 
   // draw lines around the screen
@@ -317,7 +307,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     1,
     HORIZONTAL_RESOLUTION-1,
     1,
-    0x55, 0xdd, 0x88, 0xff
+    COLOR_GREEN
   );
   // right line
   draw_rectangle(
@@ -326,7 +316,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     0,
     1,
     VERTICAL_RESOLUTION,
-    0x55, 0xdd, 0x88, 0xff
+    COLOR_GREEN
   );
   // bottom line
   draw_rectangle(
@@ -335,7 +325,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     VERTICAL_RESOLUTION-1,
     HORIZONTAL_RESOLUTION-1,
     1,
-    0x55, 0xdd, 0x88, 0xff
+    COLOR_GREEN
   );
   // left line
   draw_rectangle(
@@ -344,7 +334,7 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     1,
     1,
     VERTICAL_RESOLUTION-1,
-    0x55, 0xdd, 0x88, 0xff
+    COLOR_GREEN
   );
 }
 
@@ -420,10 +410,18 @@ GAME_UPDATE_RENDER(game_update_render)
   }
   game_draw(backbuffer, gameState);
   gameState->totalSeconds += dt;
-  debug_font_draw(backbuffer, tprintf("Seconds %.2f", gameState->totalSeconds), 300.0f, 100.0f, 0x0, 0, 0);
+  debug_font_draw(
+    backbuffer,
+      tprintf(
+        "Seconds %.2f",
+        gameState->totalSeconds
+    ), 
+    300.0f, 100.0f,
+    COLOR_PURE_BLACK
+  );
 }
 
-void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a)
+void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, Color color)
 {
   u8* line = (u8*)backbuffer->buffer + (y * backbuffer->pixelsPerLine * backbuffer->bytesPerPixel);
   for (i32 ry = 0;ry < h;++ry)
@@ -437,10 +435,10 @@ void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8
         {
           u32* pixel = (u32*)pixelByte;
           *pixel = 0;
-          *pixel |= ((u32)b << backbuffer->blueShift);
-          *pixel |= ((u32)g << backbuffer->greenShift);
-          *pixel |= ((u32)r << backbuffer->redShift);
-          *pixel |= ((u32)a << backbuffer->alphaShift);
+          *pixel |= ((u32)color.b << backbuffer->blueShift);
+          *pixel |= ((u32)color.g << backbuffer->greenShift);
+          *pixel |= ((u32)color.r << backbuffer->redShift);
+          *pixel |= ((u32)color.a << backbuffer->alphaShift);
         }
         pixelByte += backbuffer->bytesPerPixel;
       }

@@ -106,17 +106,36 @@ typedef struct Memory{
   usize size;
 }Memory;
 
+typedef struct Color{
+  u8 b, g, r, a;
+}Color;
+
+#define COLOR_PURE_WHITE (Color){.b = 0xff, .g = 0xff, .r = 0xff, .a = 0xff}
+#define COLOR_WHITE (Color){.b = 0xde, .g = 0xde, .r = 0xde, .a = 0xff}
+#define COLOR_GREEN (Color){.b = 0x56, .g = 0xdd, .r = 0x45, .a = 0xff}
+
+#define COLOR_YELLOW (Color){.b = 0x55, .g = 0xee, .r = 0xff, .a = 0xff}
+#define COLOR_GREY (Color){.b = 0x88, .g = 0x88, .r = 0x88, .a = 0xff}
+#define COLOR_RED (Color){.b = 0x44, .g = 0x44, .r = 0xee, .a = 0xff}
+#define COLOR_PURE_BLACK (Color){.a = 0xff}
+
+#define COLOR_BOX COLOR_YELLOW
+#define COLOR_WALL COLOR_GREY
+
+#define COLOR_PLAYER (Color){.b = 0xee, .g = 0xee, .r = 0x00, .a = 0xff}
+#define COLOR_TILE (Color){.b = 0x88, .g = 0x88, .r = 0x00, .a = 0xff}
+
 
 #define GAME_UPDATE_RENDER(name) void name(Backbuffer* backbuffer, Keyboard keyboard, PlatformProcs procs, Memory* permanentMemory, Memory* temporaryMemory, f64 dt)
 typedef GAME_UPDATE_RENDER(GameUpdateRender);
 GAME_UPDATE_RENDER(game_update_render);
 
-#define DEBUG_FONT_DRAW(name) void name(Backbuffer* backbuffer, const char* str, f32 penX, f32 penY, u8 r, u8 g, u8 b)
+#define DEBUG_FONT_DRAW(name) void name(Backbuffer* backbuffer, const char* str, f32 penX, f32 penY, Color color)
 typedef DEBUG_FONT_DRAW(DebugFontDraw);
 DEBUG_FONT_DRAW(debug_font_draw);
 
 
-void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, u8 r, u8 g, u8 b, u8 a);
+void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, Color color);
 void clear_background(Backbuffer* backbuffer, u8 r, u8 g, u8 b);
 
 

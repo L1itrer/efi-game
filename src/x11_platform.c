@@ -204,7 +204,7 @@ int main(int argc, char** argv)
     gameLib.game_update_render(&backbuffer, keyboard, platformProcs, &permaMemory, &tempMemory, secondsElapsed);
     char buf[1024];
     sprintf(buf, "%lu [us], %.2f FPS\n", workMicroseconds, fps);
-    gameLib.debug_font_draw(&backbuffer, buf, 50.0f, 50.0f, 0, 0, 0);
+    gameLib.debug_font_draw(&backbuffer, buf, 50.0f, 50.0f, COLOR_PURE_BLACK);
     void* temp = backbuffer.buffer;
     XImage* tempImg = backimage;
     backbuffer.buffer = frontbuffer;
