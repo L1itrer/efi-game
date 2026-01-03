@@ -187,6 +187,11 @@ int main(int argc, char** argv)
                   keyboard.key[KEY_RIGHT] = TRUE;
                   break;
                 }
+              case XK_Return:
+                {
+                  keyboard.key[KEY_ENTER] = TRUE;
+                  break;
+                }
             }
             break;
           }
@@ -204,7 +209,7 @@ int main(int argc, char** argv)
     gameLib.game_update_render(&backbuffer, keyboard, platformProcs, &permaMemory, &tempMemory, secondsElapsed);
     char buf[1024];
     sprintf(buf, "%lu [us], %.2f FPS\n", workMicroseconds, fps);
-    gameLib.debug_font_draw(&backbuffer, buf, 50.0f, 50.0f, COLOR_PURE_BLACK);
+    gameLib.debug_font_draw(&backbuffer, buf, 50.0f, 50.0f, COLOR_PURE_WHITE);
     void* temp = backbuffer.buffer;
     XImage* tempImg = backimage;
     backbuffer.buffer = frontbuffer;
