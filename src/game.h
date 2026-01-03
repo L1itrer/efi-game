@@ -138,6 +138,7 @@ typedef DEBUG_FONT_DRAW(DebugFontDraw);
 DEBUG_FONT_DRAW(debug_font_draw);
 
 
+
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, Color color);
 void clear_background(Backbuffer* backbuffer, u8 r, u8 g, u8 b);
 
@@ -195,6 +196,10 @@ typedef struct GameState{
   // warnings for quit
   i32 quitWarningLevel;
 }GameState;
+
+
+#define GAME_SWITCH_SCENE(name) void name(GameState* state)
+typedef GAME_SWITCH_SCENE(GameSwitchScene);
 
 typedef struct Direction{
   i32 x;

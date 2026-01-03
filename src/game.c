@@ -93,10 +93,10 @@ void player_move(GameState* state, Direction direction)
   }
 }
 
-void game_select_switch(GameState* state)
+GAME_SWITCH_SCENE(game_switch_select)
 {
   state->quitWarningLevel = 0;
-  state->currSelection = (u32)state->currLevelIndex;
+  state->currSelection = 0;
   state->currLevelIndex = 0;
   state->gameSceneEnum = SCENE_LEVEL_SELECT;
   state->gameWon = FALSE;
@@ -108,7 +108,7 @@ void game_update_level(GameState* state, Keyboard* keys)
   {
     if (keys->key[KEY_CHAR_Q])
     {
-      game_select_switch(state);
+      game_switch_select(state);
     }
     return;
   }
@@ -119,7 +119,7 @@ void game_update_level(GameState* state, Keyboard* keys)
   }
   if (state->quitWarningLevel >= 2)
   {
-    game_select_switch(state);
+    game_switch_select(state);
     return;
   }
 
@@ -155,7 +155,7 @@ void game_update_level(GameState* state, Keyboard* keys)
 }
 
 
-void game_level_switch(GameState* state, u32 levelIdx)
+void game_switch_level(GameState* state, u32 levelIdx)
 {
   state->currSelection = 0;
   state->gameSceneEnum = SCENE_LEVEL;
@@ -169,22 +169,60 @@ void game_update_level_select(GameState* state, Keyboard* keyboard)
   i32 count = Arrlen(Glevels_data);
   if (keyboard->key[KEY_UP]) 
   {
-    state->currSelection = (state->currSelection+1) % count;
+    state->currSelection = ((state->currSelection-1)+count) % count;
     return;
   }
   if (keyboard->key[KEY_DOWN])
   {
-    state->currSelection = (state->currSelection-1) % count;
+    state->currSelection = ((state->currSelection+1)+count) % count;
     return;
   }
   if (keyboard->key[KEY_ENTER] || keyboard->key[KEY_CHAR_Z])
   {
-    game_level_switch(state, state->currSelection);
+    game_switch_level(state, state->currSelection);
     return;
   }
   if (keyboard->key[KEY_CHAR_Q])
   {
     Gprocs.quit();
+  }
+}
+
+
+#define MENU_OPTIONS \
+MENU_DEF("Level select", game_switch_select) \
+MENU_DEF("Credits", game_switch_select) \
+MENU_DEF("Quit", game_switch_select) \
+
+const char* GmenuOptionNames[] = {
+  #define MENU_DEF(n, p) n,
+  MENU_OPTIONS
+  #undef MENU_DEF
+};
+
+GameSwitchScene* GmenuActions[] = {
+  #define MENU_DEF(n, p) p,
+  MENU_OPTIONS
+  #undef MENU_DEF
+};
+
+void game_update_menu(GameState* state, Keyboard* keyboard)
+{
+  i32 count = Arrlen(GmenuOptionNames);
+  if (keyboard->key[KEY_UP]) 
+  {
+    state->currSelection = ((state->currSelection-1)+count) % count;
+    return;
+  }
+  if (keyboard->key[KEY_DOWN])
+  {
+    state->currSelection = ((state->currSelection+1)+count) % count;
+    return;
+  }
+  if (keyboard->key[KEY_ENTER] || keyboard->key[KEY_CHAR_Z])
+  {
+    GmenuActions[state->currSelection](state);
+    return;
   }
 }
 
@@ -206,7 +244,7 @@ void game_update(GameState* state, Keyboard* keyboard, f64 dt)
       }
     case SCENE_MENU:
       {
-        // TODO:
+        game_update_menu(state, keyboard);
         break;
       }
   }
@@ -283,7 +321,7 @@ void draw_box(Backbuffer* backbuffer, i32 x, i32 y)
 }
 
 
-internal void game_level_draw(Backbuffer* backbuffer, GameState* state)
+internal void game_draw_level(Backbuffer* backbuffer, GameState* state)
 {
   clear_background(backbuffer, 0, 0, 0);
   for (i32 y = 0;y < TILE_COUNT_HEIGHT;++y)
@@ -447,7 +485,7 @@ internal void game_level_draw(Backbuffer* backbuffer, GameState* state)
 }
 
 
-void game_level_select_draw(Backbuffer* backbuffer, GameState* state)
+void game_draw_select(Backbuffer* backbuffer, GameState* state)
 {
   clear_background(backbuffer, 0x18, 0x18, 0x18);
   Font* font = &GrobotoFont;
@@ -477,23 +515,54 @@ void game_level_select_draw(Backbuffer* backbuffer, GameState* state)
   }
 }
 
+void game_draw_menu(Backbuffer* backbuffer, GameState* state)
+{
+  clear_background(backbuffer, 0x18, 0x18, 0x18);
+  Font* font = &GrobotoFont;
+  f32 yStart = 400.0f;
+  f32 xStart = 200.0f;
+  u32 count = Arrlen(GmenuOptionNames);
+  for (u32 i = 0;i < count;++i)
+  {
+    Color c;
+    if ((u32)i == state->currSelection)
+    {
+      c = COLOR_YELLOW;
+      i32 factor = state->playerAnim * 3;
+      c.b -= factor;
+      c.r -= factor;
+      c.g -= factor;
+    }
+    else c = COLOR_WHITE;
+
+    draw_text(
+      font,
+      backbuffer,
+      GmenuOptionNames[i],
+      xStart,
+      yStart + (f32)i*50.0f,
+      c
+    );
+  }
+}
+
 void game_draw(Backbuffer* backbuffer, GameState* state)
 {
   switch (state->gameSceneEnum)
   {
     case SCENE_LEVEL:
       {
-        game_level_draw(backbuffer, state);
+        game_draw_level(backbuffer, state);
         break;
       }
     case SCENE_LEVEL_SELECT:
       {
-        game_level_select_draw(backbuffer, state);
+        game_draw_select(backbuffer, state);
         break;
       }
     case SCENE_MENU:
       {
-        // TODO:
+        game_draw_menu(backbuffer, state);
         break;
       }
   }
@@ -519,7 +588,7 @@ void game_init(GameState* state)
   state->totalSeconds = 0;
   state->level = Glevels_data[1];
   state->currLevelIndex = 1;
-  state->gameSceneEnum = SCENE_LEVEL_SELECT;
+  state->gameSceneEnum = SCENE_MENU;
   state->initialized = TRUE;
 }
 
