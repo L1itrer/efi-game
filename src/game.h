@@ -101,6 +101,7 @@ typedef struct Keyboard{
 
 typedef struct PlatformProcs{
   i32 (*debug_printf)(const char*, ...);
+  void (*quit)(void);
 }PlatformProcs;
 
 typedef struct Memory{
@@ -116,7 +117,7 @@ typedef struct Color{
 #define COLOR_WHITE (Color){.b = 0xde, .g = 0xde, .r = 0xde, .a = 0xff}
 #define COLOR_GREEN (Color){.b = 0x56, .g = 0xdd, .r = 0x45, .a = 0xff}
 
-#define COLOR_YELLOW (Color){.b = 0x55, .g = 0xee, .r = 0xff, .a = 0xff}
+#define COLOR_YELLOW (Color){.b = 0x88, .g = 0xff, .r = 0xff, .a = 0xff}
 #define COLOR_GREY (Color){.b = 0x88, .g = 0x88, .r = 0x88, .a = 0xff}
 #define COLOR_RED (Color){.b = 0x44, .g = 0x44, .r = 0xee, .a = 0xff}
 #define COLOR_PURE_BLACK (Color){.a = 0xff}
@@ -191,6 +192,8 @@ typedef struct GameState{
   bool32 gameWon;
   // level select stuff
   u32 currSelection;
+  // warnings for quit
+  i32 quitWarningLevel;
 }GameState;
 
 typedef struct Direction{

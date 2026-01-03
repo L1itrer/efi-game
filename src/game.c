@@ -1,6 +1,7 @@
 #include "game.h"
 
 #include "../meta/roboto.h"
+#include "../meta/roboto_small.h"
 #include <stdint.h>
 #include <stdarg.h>
 
@@ -92,15 +93,49 @@ void player_move(GameState* state, Direction direction)
   }
 }
 
-void game_level_update(GameState* state, Keyboard* keys)
+void game_select_switch(GameState* state)
 {
+  state->quitWarningLevel = 0;
+  state->currSelection = (u32)state->currLevelIndex;
+  state->currLevelIndex = 0;
+  state->gameSceneEnum = SCENE_LEVEL_SELECT;
+  state->gameWon = FALSE;
+}
+
+void game_update_level(GameState* state, Keyboard* keys)
+{
+  if (state->gameWon)
+  {
+    if (keys->key[KEY_CHAR_Q])
+    {
+      game_select_switch(state);
+    }
+    return;
+  }
+
+  if (keys->key[KEY_CHAR_Q])
+  {
+    state->quitWarningLevel += 1;
+  }
+  if (state->quitWarningLevel >= 2)
+  {
+    game_select_switch(state);
+    return;
+  }
+
+  bool32 moved = FALSE;
   for (i32 dir = 0;dir < 4;++dir)
   {
     if (keys->key[dir])
     {
       player_move(state, directions[dir]);
+      moved = TRUE;
       break;
     }
+  }
+  if (moved)
+  {
+    state->quitWarningLevel = 0;
   }
   i32 correctCounter = 0;
 
@@ -126,10 +161,10 @@ void game_level_switch(GameState* state, u32 levelIdx)
   state->gameSceneEnum = SCENE_LEVEL;
   state->gameWon = FALSE;
   state->level = Glevels_data[levelIdx];
-  state->playerAnim = 0;
+  state->currLevelIndex = (i32)levelIdx;
 }
 
-void game_level_select_update(GameState* state, Keyboard* keyboard)
+void game_update_level_select(GameState* state, Keyboard* keyboard)
 {
   i32 count = Arrlen(Glevels_data);
   if (keyboard->key[KEY_UP]) 
@@ -145,6 +180,11 @@ void game_level_select_update(GameState* state, Keyboard* keyboard)
   if (keyboard->key[KEY_ENTER] || keyboard->key[KEY_CHAR_Z])
   {
     game_level_switch(state, state->currSelection);
+    return;
+  }
+  if (keyboard->key[KEY_CHAR_Q])
+  {
+    Gprocs.quit();
   }
 }
 
@@ -156,12 +196,12 @@ void game_update(GameState* state, Keyboard* keyboard, f64 dt)
   {
     case SCENE_LEVEL:
       {
-        game_level_update(state, keyboard);
+        game_update_level(state, keyboard);
         break;
       }
     case SCENE_LEVEL_SELECT:
       {
-        game_level_select_update(state, keyboard);
+        game_update_level_select(state, keyboard);
         break;
       }
     case SCENE_MENU:
@@ -325,13 +365,6 @@ internal void game_level_draw(Backbuffer* backbuffer, GameState* state)
   );
 
   f32 drawableHeight = (f32)((f32)(TILE_COUNT_HEIGHT+1) * (f32)TILE_HEIGHT_PIXELS - (TILE_HEIGHT_PIXELS/2));
-  debug_font_draw(
-    backbuffer,
-    "drawable message",
-    50.0f,
-    drawableHeight,
-    COLOR_WHITE
-  );
 
   // draw current boxes
   Color color;
@@ -343,9 +376,35 @@ internal void game_level_draw(Backbuffer* backbuffer, GameState* state)
             state->level.currCorrectBoxes,
             state->level.requiredBoxesCount
             ),
-    400.0f,
+    600.0f,
     drawableHeight,
     color
+  );
+  draw_text(
+    &Groboto_smallFont,
+    backbuffer,
+    tprintf(
+      "[Arrow Keys] - Move   [u] - undo"
+    ),
+    50.0f, drawableHeight,
+    COLOR_WHITE
+  );
+  const char* msg;
+  bool32 warned = state->quitWarningLevel > 0;
+  if (warned)
+  {
+    msg = "(one more time to confirm)";
+  }
+  else
+  {
+    msg = "[q] - quit";
+  }
+  draw_text(
+    &Groboto_smallFont,
+    backbuffer,
+    msg,
+    50.0f, drawableHeight+20.0f,
+    warned ? COLOR_RED : COLOR_WHITE
   );
 
   // draw lines around the screen
@@ -390,12 +449,23 @@ internal void game_level_draw(Backbuffer* backbuffer, GameState* state)
 
 void game_level_select_draw(Backbuffer* backbuffer, GameState* state)
 {
+  clear_background(backbuffer, 0x18, 0x18, 0x18);
   Font* font = &GrobotoFont;
   f32 yStart = 100.0f;
   i32 count = Arrlen(Glevels_data);
   for (i32 i = 0;i < count;++i)
   {
-    Color c = ((u32)i == state->currSelection) ? COLOR_YELLOW : COLOR_WHITE;
+    Color c;
+    if ((u32)i == state->currSelection)
+    {
+      c = COLOR_YELLOW;
+      i32 factor = state->playerAnim * 3;
+      c.b -= factor;
+      c.r -= factor;
+      c.g -= factor;
+    }
+    else c = COLOR_WHITE;
+
     draw_text(
       font,
       backbuffer,
@@ -481,15 +551,6 @@ GAME_UPDATE_RENDER(game_update_render)
     fixed_update(gameState);
   }
   game_draw(backbuffer, gameState);
-  //debug_font_draw(
-  //  backbuffer,
-  //    tprintf(
-  //      "Seconds %.2f",
-  //      gameState->totalSeconds
-  //  ), 
-  //  300.0f, 100.0f,
-  //  COLOR_PURE_WHITE
-  //);
 }
 
 void draw_rectangle(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, Color color)

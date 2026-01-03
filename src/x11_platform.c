@@ -19,7 +19,8 @@
 #include "x86_intrinsics.h"
 
 
-const char* gameDllPath =  "./build/game.so";
+global const char* gameDllPath =  "./build/game.so";
+global bool32 Grunning = TRUE;
 
 typedef struct X11GameLib{
   void* dll;
@@ -27,6 +28,12 @@ typedef struct X11GameLib{
   DebugFontDraw* debug_font_draw;
   struct timespec prevTime;
 }X11GameLib;
+
+internal void x11_quit(void)
+{
+  printf("quitting gracefully...\n");
+  Grunning = FALSE;
+}
 
 internal void x11_load_game_dll(X11GameLib* game)
 {
@@ -125,9 +132,9 @@ int main(int argc, char** argv)
   XSetWMProtocols(display, window, &wmDeleteWindow, 1);
   XSelectInput(display, window, KeyPressMask | PointerMotionMask);
   XMapWindow(display, window);
-  bool32 running = TRUE;
-  PlatformProcs platformProcs = {
-    .debug_printf = printf
+  PlatformProcs platformProcs = (PlatformProcs){
+    .debug_printf = printf,
+    .quit = x11_quit,
   };
 
   u64 tscLast, tscEnd = 0, tscWorkEnd = 0, tscWorkLast;
@@ -137,7 +144,7 @@ int main(int argc, char** argv)
   f32 fps = 0.0f;
   u64 workMicroseconds = 0;
 
-  for (;running;)
+  for (;Grunning;)
   {
     x11_reload_game_dll(&gameLib);
     Keyboard keyboard = {0};
@@ -154,7 +161,7 @@ int main(int argc, char** argv)
             {
               case 'q':
                 {
-                  running = FALSE;
+                  keyboard.key[KEY_CHAR_Q] = TRUE;
                   break;
                 }
               case 'z':
@@ -199,7 +206,7 @@ int main(int argc, char** argv)
           {
             if ((Atom)event.xclient.data.l[0] == wmDeleteWindow)
             {
-              running = FALSE;
+              Grunning = FALSE;
             }
             break;
           }

@@ -29,7 +29,13 @@ char* efiErrorCodeStrs[] = {
 
 global EfiSystemTable* Gst;
 global bool32 GcanUseSerial = FALSE;
+global bool32 Grunning = TRUE;
 
+
+void efi_quit(void)
+{
+  Grunning = FALSE;
+}
 
 internal inline void outb(u16 port, u8 data)
 {
@@ -287,12 +293,11 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   stbsp_sprintf(canUseRdtscMsg, "rdtsc: %s", invariantArt ? "true" : "false");
   f64 secondsElapsed = 0.03;
   debug_printf("Initialization complete\n");
-  for (;;)
+  for (;Grunning;)
   {
     memset(backbuffer.buffer, 0, bytesPerBuffer);
     memset(&keyboard, 0, sizeof(keyboard));
     efi_poll_keyboard(&keyboard);
-    if (keyboard.key[KEY_CHAR_Q]) break;
     game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory, secondsElapsed);
     debug_font_draw(&backbuffer, canUseRdtscMsg, 50.0f, 50.0f, COLOR_PURE_BLACK);
     temp = backbuffer.buffer;
