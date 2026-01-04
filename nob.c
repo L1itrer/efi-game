@@ -1,7 +1,8 @@
 #define NOB_IMPLEMENTATION
-#define NOB_EXPERIMENTAL_DELETE_OLD
+#if !defined(_WIN32)
+#  define NOB_EXPERIMENTAL_DELETE_OLD
+#endif
 #define NOB_STRIP_PREFIX
-//#define NOB_NO_ECHO
 #include "./src/thirdparty/nob.h"
 
 #define BUILD_DIR "./build"
@@ -26,19 +27,6 @@ void cflags(Cmd* cmd, bool warnings)
   cmd_append(cmd, "-DHAVE_USE_MS_ABI");
 }
 
-void posix_efi_flags(Cmd* cmd)
-{
-  cmd_append(cmd, "-I.");
-  cmd_append(cmd, "-I./src/thirdparty/posix-uefi/uefi");
-  cmd_append(cmd, "-I./usr/include");
-  cmd_append(cmd, "-I./usr/include/efi");
-  cmd_append(cmd, "-I./usr/include/efi/protocol");
-  cmd_append(cmd, "-I./usr/include/efi/x86_64");
-  cmd_append(cmd, "-I./src/thirdparty/stb/");
-  cmd_append(cmd, "-D__x86_64__");
-  cmd_append(cmd, "-Wno-builtin-declaration-mismatch");
-}
-
 void ldflags(Cmd* cmd)
 {
   cmd_append(cmd, "-nostdlib");
@@ -50,106 +38,7 @@ void ldflags(Cmd* cmd)
 
 void compiler(Cmd* cmd)
 {
-  // cmd_append(cmd, "gcc");
   cmd_append(cmd, "clang");
-}
-
-void objcopy_flags(Cmd* cmd)
-{
-  cmd_append(cmd, "-j", ".text");
-  cmd_append(cmd, "-j", ".sdata");
-  cmd_append(cmd, "-j", ".data");
-  cmd_append(cmd, "-j", ".dynamic");
-  cmd_append(cmd, "-j", ".dynsym");
-  cmd_append(cmd, "-j", ".rel");
-  cmd_append(cmd, "-j", ".rela");
-  cmd_append(cmd, "-j", ".rel.*");
-  cmd_append(cmd, "-j", ".rela.*");
-  cmd_append(cmd, "-j", ".reloc");
-  cmd_append(cmd, "--target", "efi-app-x86_64");
-  cmd_append(cmd, "--subsystem=10");
-  cmd_append(cmd, BUILD_DIR "/" EFI_EXE ".so");
-  cmd_append(cmd, BUILD_DIR "/" EFI_EXE ".debug");
-}
-
-char* posix_efi_libc[] = {
-  "crt_x86_64",
-  "qsort",
-  "dirent",
-  "stat",
-  "stdio",
-  "stdlib",
-  "string",
-  "time",
-  "unistd"
-};
-
-#define POSIX_EFI_DIR "./src/thirdparty/posix-uefi/uefi/"
-
-bool build_debug(Cmd* cmd)
-{
-  Procs procs = {0};
-  for (int i = 0;i < NOB_ARRAY_LEN(posix_efi_libc);++i)
-  {
-    cmd_append(cmd, "gcc");
-    cflags(cmd, false);
-    cmd_append(cmd, "-fpic");
-    cmd_append(cmd, "-fPIC");
-    posix_efi_flags(cmd);
-    cmd_append(cmd, "-c");
-    cmd_append(cmd, temp_sprintf("%s%s.c", POSIX_EFI_DIR, posix_efi_libc[i]));
-    cmd_append(cmd, "-o", temp_sprintf("%s/%s.o", BUILD_DIR, posix_efi_libc[i]));
-    if (!cmd_run(cmd, .async = &procs, .max_procs = 8)) return false;
-  }
-  procs_wait(procs);
-  cmd_append(cmd, "ar");
-  cmd_append(cmd, "-rsv");
-  cmd_append(cmd, "./build/libuefi.a");
-  // NOTE: excludes crt from libuefi
-  for (int i = 1;i < NOB_ARRAY_LEN(posix_efi_libc);++i)
-  {
-    cmd_append(cmd, temp_sprintf("./build/%s.o", posix_efi_libc[i]));
-  }
-  if (!cmd_run(cmd)) return false;
-
-  cmd_append(cmd, "gcc");
-  cflags(cmd, true);
-  cmd_append(cmd, "-fpic");
-  cmd_append(cmd, "-fPIC");
-  cmd_append(cmd, "-c");
-  cmd_append(cmd, "./src/efi_platform.c");
-  cmd_append(cmd, "-o", "./build/efi_platform.o");
-  if (!cmd_run(cmd)) return false;
-  cmd_append(cmd, "gcc");
-  cflags(cmd, true);
-  posix_efi_flags(cmd);
-  cmd_append(cmd, "-c");
-  cmd_append(cmd, "./src/posix_main.c");
-  cmd_append(cmd, "-o", "./build/posix_main.o");
-  if (!cmd_run(cmd)) return false;
-
-
-  cmd_append(cmd, "ld");
-  cmd_append(cmd, "-nostdlib");
-  cmd_append(cmd, "-shared");
-  cmd_append(cmd, "-Bsymbolic");
-  cmd_append(cmd, "-Lbuild");
-  cmd_append(cmd, "-Luefi");
-  cmd_append(cmd, "./build/efi_platform.o", "./build/posix_main.o", temp_sprintf("%s/%s.o", BUILD_DIR, posix_efi_libc[0]));
-  cmd_append(cmd, "-o", BUILD_DIR "/" EFI_EXE ".so");
-  cmd_append(cmd, "-luefi");
-  cmd_append(cmd, "-T", "./src/thirdparty/posix-uefi/uefi/elf_x86_64_efi.lds");
-  if (!cmd_run(cmd)) return false;
-
-  cmd_append(cmd, "objcopy");
-  objcopy_flags(cmd);
-  if (!cmd_run(cmd)) return false;
-
-  cmd_append(cmd, "objcopy", "--only-keep-debug", BUILD_DIR "/" EFI_EXE ".so", BUILD_DIR "/" EFI_EXE ".debuginfo");
-  if (!cmd_run(cmd)) return false;
-
-
-  return true;
 }
 
 int build_x11(Cmd* cmd, Procs* procs)
@@ -232,8 +121,6 @@ int main(int argc, char** argv)
   ldflags(cmd);
 
   if (!cmd_run(cmd, .async = &procs)) return 1;
-
-  //build_debug(cmd);
 
   procs_wait(procs);
 
