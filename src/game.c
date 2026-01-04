@@ -328,10 +328,46 @@ void draw_box(Backbuffer* backbuffer, i32 x, i32 y)
   );
 }
 
+internal void draw_rectangle_lines(Backbuffer* backbuffer, i32 x, i32 y, i32 w, i32 h, Color color, i32 thickness)
+{
+  i32 wlen = w - thickness;
+  i32 hlen = h - thickness;
+  // upper line
+  draw_rectangle(
+    backbuffer,
+    x, y,
+    wlen,
+    thickness,
+    color
+  );
+  // right line
+  draw_rectangle(
+    backbuffer,
+    x + wlen, y,
+    thickness,
+    hlen,
+    color
+  );
+  // bottom line
+  draw_rectangle(
+    backbuffer,
+    x + thickness, y + hlen,
+    wlen, thickness,
+    color
+  );
+  // left line
+  draw_rectangle(
+    backbuffer,
+    x, y + thickness,
+    thickness, hlen,
+    color
+  );
+}
+
 
 internal void game_draw_level(Backbuffer* backbuffer, GameState* state)
 {
-  clear_background(backbuffer, 0, 0, 0);
+  clear_background(backbuffer, 0x18, 0x18, 0x18);
   for (i32 y = 0;y < TILE_COUNT_HEIGHT;++y)
   {
     for (i32 x = 0;x < TILE_COUNT_WIDTH;++x)
@@ -454,41 +490,12 @@ internal void game_draw_level(Backbuffer* backbuffer, GameState* state)
   );
 
   // draw lines around the screen
-  // top line
-  draw_rectangle(
+  draw_rectangle_lines(
     backbuffer,
-    1,
-    1,
-    HORIZONTAL_RESOLUTION-1,
-    1,
-    COLOR_GREEN
-  );
-  // right line
-  draw_rectangle(
-    backbuffer,
-    HORIZONTAL_RESOLUTION-1,
-    0,
-    1,
+    0, 0,
+    HORIZONTAL_RESOLUTION,
     VERTICAL_RESOLUTION,
-    COLOR_GREEN
-  );
-  // bottom line
-  draw_rectangle(
-    backbuffer,
-    1,
-    VERTICAL_RESOLUTION-1,
-    HORIZONTAL_RESOLUTION-1,
-    1,
-    COLOR_GREEN
-  );
-  // left line
-  draw_rectangle(
-    backbuffer,
-    1,
-    1,
-    1,
-    VERTICAL_RESOLUTION-1,
-    COLOR_GREEN
+    COLOR_GREEN, 1
   );
 }
 
@@ -543,7 +550,7 @@ void game_draw_menu(Backbuffer* backbuffer, GameState* state)
     }
     else c = COLOR_WHITE;
 
-    // last should always be quit
+    // last index should always be quit
     if (i == (count-1) && state->quitWarningLevel > 0)
     {
       draw_text(
@@ -567,6 +574,13 @@ void game_draw_menu(Backbuffer* backbuffer, GameState* state)
       );
     }
   }
+  draw_rectangle_lines(
+    backbuffer,
+    50, 70,
+    100, 200,
+    COLOR_PURE_WHITE,
+    1
+  );
 }
 
 void game_draw(Backbuffer* backbuffer, GameState* state)
