@@ -10,6 +10,12 @@
 #define SRC_BUILD_DIR  "./src_build"
 #define META_DIR "./meta"
 
+#ifdef _WIN32
+#define POSTFIX ".exe"
+#else
+#define POSTFIX
+#endif
+
 void cflags(Cmd* cmd, bool warnings)
 {
   if (warnings)
@@ -72,7 +78,7 @@ int main(int argc, char** argv)
   if (!mkdir_if_not_exists(BUILD_DIR)) return 1;
   if (!mkdir_if_not_exists(META_DIR)) return 1;
 
-  if (needs_rebuild1(BUILD_DIR "/ttf2c", SRC_BUILD_DIR "/ttf2c.c"))
+  if (needs_rebuild1(BUILD_DIR "/ttf2c" POSTFIX, SRC_BUILD_DIR "/ttf2c.c"))
   {
     compiler(cmd);
     cmd_append(cmd, "-Wall", "-Wextra");
@@ -81,7 +87,15 @@ int main(int argc, char** argv)
     cmd_append(cmd, "-lm", "-g");
     if (!cmd_run(cmd, .async = &procs)) return 1;
   }
-  if (needs_rebuild1(BUILD_DIR "/burnimg", SRC_BUILD_DIR "/burnimg.c"))
+  if (needs_rebuild1(BUILD_DIR "/efirun" POSTFIX, SRC_BUILD_DIR "/efirun.c"))
+  {
+    compiler(cmd);
+    cmd_append(cmd, "-Wall", "-Wextra");
+    cmd_append(cmd, SRC_BUILD_DIR "/efirun.c");
+    cmd_append(cmd, "-o", BUILD_DIR "/efirun");
+    if (!cmd_run(cmd, .async = &procs)) return 1;
+  }
+  if (needs_rebuild1(BUILD_DIR "/burnimg" POSTFIX, SRC_BUILD_DIR "/burnimg.c"))
   {
     compiler(cmd);
     cmd_append(cmd, "-Wall", "-Wextra");

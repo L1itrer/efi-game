@@ -15,4 +15,7 @@
 # folder for cd image
 /img
 
+# folder for running efi
+/esp
+
 nob
