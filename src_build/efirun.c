@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
   nob_cmd_append(&cmd, "-drive", nob_temp_sprintf("if=pflash,format=raw,unit=0,file=%s,readonly=on", codePath));
   nob_cmd_append(&cmd, "-drive", nob_temp_sprintf("if=pflash,format=raw,unit=1,file=%s", varsPath));
   nob_cmd_append(&cmd, "-drive", "format=raw,file=fat:rw:esp");
+  nob_cmd_append(&cmd, "-serial", "mon:stdio");
   nob_cmd_append(&cmd, "-net", "none");
   if (!nob_cmd_run(&cmd)) return 1;
   nob_log(NOB_INFO, "OK");

@@ -180,6 +180,40 @@ void efi_poll_keyboard(Keyboard* keyboard)
 }
 
 
+u64 efi_measure_rdtsc_freq(void)
+{
+  EfiTime time;
+  Gst->runtimeServices->get_time(&time, NULL);
+  u64 startSecond = time.second + time.minute*60;
+  u64 currSecond = startSecond;
+  // align to a whole second
+  for (;;)
+  {
+    Gst->runtimeServices->get_time(&time, NULL);
+    currSecond = time.second + time.minute*60;
+    if (currSecond != startSecond) break;
+  }
+  u64 currRdtsc = x86_rdtsc();
+  for (;;)
+  {
+    Gst->runtimeServices->get_time(&time, NULL);
+    if (currSecond != (time.second + time.minute*60)) break;
+  }
+  u64 endRdrsc  = x86_rdtsc();
+  return endRdrsc - currRdtsc;
+}
+
+bool32 efi_get_rdtsc_freq(u64* freq)
+{
+  bool32 result = x86_can_use_rdtsc(freq);
+  if (!result)
+  {
+    *freq = efi_measure_rdtsc_freq();
+  }
+  return result;
+}
+
+
 // make clang shut up about unused image handle
 global EfiHandle gImageHandle;
 
@@ -202,14 +236,14 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   }
 
   u64 tscFreq = 0;
-  bool32 invariantArt = x86_can_use_rdtsc(&tscFreq);
+  bool32 invariantArt = efi_get_rdtsc_freq(&tscFreq);//x86_can_use_rdtsc(&tscFreq);
   if (invariantArt)
   {
     debug_printf("This cpu supports invariant tsc!\n");
   }
   else
   {
-    debug_printf("No invariant tsc for you!\n");
+    debug_printf("No invariant tsc for you! Detected freq of %llu\n", tscFreq);
   }
 
 
@@ -309,24 +343,17 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     frontbuffer = temp;
     status = gop->blt(gop, frontbuffer, EfiBltBufferToVideo, 0, 0, 0, 0, HORIZONTAL_RESOLUTION, VERTICAL_RESOLUTION, 0);
     u64 remainingUs = 0;
-    if (invariantArt)
+    tscEnd = x86_rdtsc();
+    tscWorkEnd = tscEnd;
+    u64 tscDelta = tscEnd - tscLast;
+    u64 tscWorkDelta = tscWorkEnd - tscWorkLast;
+    //u64 microSecondsElapsed = (tscDelta * 1000 * 1000)/tscFreq;
+    secondsElapsed = (f64)tscDelta/(f64)tscFreq;
+    u64 workUs = (tscWorkDelta * 1000 * 1000)/tscFreq;
+    if (workUs < TARGET_US_PER_FRAME)
     {
-      // WARNING: THIS BRANCH ONLY CAN BE TESTED ON REAL HARDWARE
-      // CRITICAL FOR IT TO WORK
-
-      tscEnd = x86_rdtsc();
-      tscWorkEnd = tscEnd;
-      u64 tscDelta = tscEnd - tscLast;
-      u64 tscWorkDelta = tscWorkEnd - tscWorkLast;
-      //u64 microSecondsElapsed = (tscDelta * 1000 * 1000)/tscFreq;
-      secondsElapsed = (f64)tscDelta/(f64)tscFreq;
-      u64 workUs = (tscWorkDelta * 1000 * 1000)/tscFreq;
-      if (workUs < TARGET_US_PER_FRAME)
-      {
-        remainingUs = TARGET_US_PER_FRAME - workUs;
-      }
+      remainingUs = TARGET_US_PER_FRAME - workUs;
     }
-    else remainingUs = 25000;
     if (EFI_ERROR(Gst->bootServices->stall(remainingUs)))
     {
       debug_printf("did not stall correctly\n");
