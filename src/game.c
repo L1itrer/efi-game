@@ -364,6 +364,28 @@ internal void draw_rectangle_lines(Backbuffer* backbuffer, i32 x, i32 y, i32 w, 
   );
 }
 
+internal void draw_rectangle_bordered(
+  Backbuffer* backbuffer,
+  i32 x, i32 y,
+  i32 w, i32 h,
+  Color insideColor,
+  Color borderColor,
+  i32 borderThickness
+)
+{
+  draw_rectangle_lines(
+    backbuffer, x, y, w, h, 
+    borderColor, borderThickness
+  );
+  draw_rectangle(
+    backbuffer,
+    x + borderThickness, y + borderThickness,
+    w - 2 * borderThickness,
+    h - 2 * borderThickness,
+    insideColor
+  );
+}
+
 
 internal void game_draw_level(Backbuffer* backbuffer, GameState* state)
 {
@@ -497,6 +519,33 @@ internal void game_draw_level(Backbuffer* backbuffer, GameState* state)
     VERTICAL_RESOLUTION,
     COLOR_GREEN, 1
   );
+
+  if (state->gameWon)
+  {
+    i32 x = 100;
+    i32 y = 100;
+    i32 w = HORIZONTAL_RESOLUTION-200;
+    i32 h = VERTICAL_RESOLUTION-300;
+    draw_rectangle_bordered(
+      backbuffer,
+      x, y, w, h,
+      COLOR_PURE_BLACK,
+      COLOR_GREEN,
+      20
+    );
+    draw_text(
+      &GrobotoFont, backbuffer,
+      "LEVEL COMPLETE",
+      (f32)x+(f32)w/2.0f-100.0f, y+100.0f,
+      COLOR_GREEN
+    );
+    draw_text(
+      &GrobotoFont, backbuffer,
+      "Press [q] to quit the level",
+      (f32)x+(f32)w/2.0f-130.0f, y+130.0f,
+      COLOR_WHITE
+    );
+  }
 }
 
 
@@ -537,13 +586,13 @@ void game_draw_menu(Backbuffer* backbuffer, GameState* state)
   f32 yStart = 400.0f;
   f32 xStart = 200.0f;
   u32 count = Arrlen(GmenuOptionNames);
+  i32 factor = state->playerAnim * 3;
   for (u32 i = 0;i < count;++i)
   {
     Color c;
     if ((u32)i == state->currSelection)
     {
       c = COLOR_YELLOW;
-      i32 factor = state->playerAnim * 3;
       c.b -= factor;
       c.r -= factor;
       c.g -= factor;
@@ -553,13 +602,17 @@ void game_draw_menu(Backbuffer* backbuffer, GameState* state)
     // last index should always be quit
     if (i == (count-1) && state->quitWarningLevel > 0)
     {
+      c = COLOR_RED;
+      c.b -= factor;
+      c.r -= factor;
+      c.g -= factor;
       draw_text(
         font,
         backbuffer,
         "(one more time to confirm)",
         xStart,
         yStart + (f32)i*50.0f,
-        COLOR_RED
+        c
       );
     }
     else
@@ -574,13 +627,6 @@ void game_draw_menu(Backbuffer* backbuffer, GameState* state)
       );
     }
   }
-  draw_rectangle_lines(
-    backbuffer,
-    50, 70,
-    100, 200,
-    COLOR_PURE_WHITE,
-    1
-  );
 }
 
 void game_draw(Backbuffer* backbuffer, GameState* state)
