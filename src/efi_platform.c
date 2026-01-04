@@ -328,16 +328,23 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     tscWorkLast = tscLast;
   }
   char canUseRdtscMsg[16];
+  char freqMsg[16];
   stbsp_sprintf(canUseRdtscMsg, "rdtsc: %s", invariantArt ? "true" : "false");
+  stbsp_sprintf(freqMsg, "freq %llu", tscFreq);
   f64 secondsElapsed = 0.03;
   debug_printf("Initialization complete\n");
+  u64 workUs = 0;
   for (;Grunning;)
   {
     memset(backbuffer.buffer, 0, bytesPerBuffer);
     memset(&keyboard, 0, sizeof(keyboard));
     efi_poll_keyboard(&keyboard);
     game_update_render(&backbuffer, keyboard, procs, &permaMemory, &tempMemory, secondsElapsed);
-    debug_font_draw(&backbuffer, canUseRdtscMsg, 50.0f, 50.0f, COLOR_PURE_BLACK);
+#if 0
+    debug_font_draw(&backbuffer, canUseRdtscMsg, 500.0f, 50.0f, COLOR_PURE_WHITE);
+    debug_font_draw(&backbuffer, freqMsg, 500.0f, 100.0f, COLOR_PURE_WHITE);
+    debug_font_draw(&backbuffer, tprintf("workUs %llu", workUs), 500.0f, 150.0f, COLOR_PURE_WHITE);
+#endif
     temp = backbuffer.buffer;
     backbuffer.buffer = frontbuffer;
     frontbuffer = temp;
@@ -349,10 +356,14 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     u64 tscWorkDelta = tscWorkEnd - tscWorkLast;
     //u64 microSecondsElapsed = (tscDelta * 1000 * 1000)/tscFreq;
     secondsElapsed = (f64)tscDelta/(f64)tscFreq;
-    u64 workUs = (tscWorkDelta * 1000 * 1000)/tscFreq;
+    workUs = (tscWorkDelta * 1000 * 1000)/tscFreq;
     if (workUs < TARGET_US_PER_FRAME)
     {
       remainingUs = TARGET_US_PER_FRAME - workUs;
+    }
+    else
+    {
+      debug_printf("Missing frame!\n");
     }
     if (EFI_ERROR(Gst->bootServices->stall(remainingUs)))
     {
