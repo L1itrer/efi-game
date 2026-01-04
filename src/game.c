@@ -184,15 +184,21 @@ void game_update_level_select(GameState* state, Keyboard* keyboard)
   }
   if (keyboard->key[KEY_CHAR_Q])
   {
-    Gprocs.quit();
+    state->gameSceneEnum = SCENE_MENU;
   }
+}
+
+void game_menu_quit(GameState* state)
+{
+  state->quitWarningLevel += 1;
+  if (state->quitWarningLevel >= 2) Gprocs.quit();
 }
 
 
 #define MENU_OPTIONS \
 MENU_DEF("Level select", game_switch_select) \
 MENU_DEF("Credits", game_switch_select) \
-MENU_DEF("Quit", game_switch_select) \
+MENU_DEF("Quit", game_menu_quit) \
 
 const char* GmenuOptionNames[] = {
   #define MENU_DEF(n, p) n,
@@ -212,11 +218,13 @@ void game_update_menu(GameState* state, Keyboard* keyboard)
   if (keyboard->key[KEY_UP]) 
   {
     state->currSelection = ((state->currSelection-1)+count) % count;
+    state->quitWarningLevel = 0;
     return;
   }
   if (keyboard->key[KEY_DOWN])
   {
     state->currSelection = ((state->currSelection+1)+count) % count;
+    state->quitWarningLevel = 0;
     return;
   }
   if (keyboard->key[KEY_ENTER] || keyboard->key[KEY_CHAR_Z])
@@ -535,14 +543,29 @@ void game_draw_menu(Backbuffer* backbuffer, GameState* state)
     }
     else c = COLOR_WHITE;
 
-    draw_text(
-      font,
-      backbuffer,
-      GmenuOptionNames[i],
-      xStart,
-      yStart + (f32)i*50.0f,
-      c
-    );
+    // last should always be quit
+    if (i == (count-1) && state->quitWarningLevel > 0)
+    {
+      draw_text(
+        font,
+        backbuffer,
+        "(one more time to confirm)",
+        xStart,
+        yStart + (f32)i*50.0f,
+        COLOR_RED
+      );
+    }
+    else
+    {
+      draw_text(
+        font,
+        backbuffer,
+        GmenuOptionNames[i],
+        xStart,
+        yStart + (f32)i*50.0f,
+        c
+      );
+    }
   }
 }
 
