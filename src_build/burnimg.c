@@ -7,7 +7,7 @@
 #define TMP_FILE "temp.txt"
 #define EFI_DIR "./efi/"
 
-int main(int argc, char* argv[])
+int main(void)
 {
   Cmd* cmd = calloc(1, sizeof(Cmd));
   cmd_append(cmd, "dd");
