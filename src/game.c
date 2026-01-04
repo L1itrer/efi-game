@@ -191,7 +191,10 @@ void game_update_level_select(GameState* state, Keyboard* keyboard)
 void game_menu_quit(GameState* state)
 {
   state->quitWarningLevel += 1;
-  if (state->quitWarningLevel >= 2) Gprocs.quit();
+  if (state->quitWarningLevel >= 2) 
+  {
+    Gprocs.quit();
+  }
 }
 
 

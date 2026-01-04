@@ -32,10 +32,6 @@ global bool32 GcanUseSerial = FALSE;
 global bool32 Grunning = TRUE;
 
 
-void efi_quit(void)
-{
-  Grunning = FALSE;
-}
 
 internal inline void outb(u16 port, u8 data)
 {
@@ -102,6 +98,13 @@ internal i32 debug_printf(const char* fmt, ...)
   }
 #endif
   return count;
+}
+
+
+void efi_quit(void)
+{
+  debug_printf("quitting gracefully...\n");
+  Grunning = FALSE;
 }
 
 internal EfiStatus print(char16* str)
@@ -282,6 +285,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
   // TODO: add a panic
   PlatformProcs procs = {
     .debug_printf = debug_printf,
+    .quit = efi_quit,
   };
   u64 tscLast = 0, tscEnd = 0, tscWorkLast = 0, tscWorkEnd = 0;
   if (invariantArt)
@@ -332,6 +336,7 @@ EfiStatus efi_main(EfiHandle imageHandle, EfiSystemTable* st)
     tscWorkLast = x86_rdtsc();
     tscLast = tscEnd;
   }
+  debug_printf("loop end\n");
   Gst->conOut->clear_screen(Gst->conOut);
 
 
