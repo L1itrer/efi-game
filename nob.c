@@ -220,6 +220,7 @@ int main(int argc, char** argv)
     cmd_append(cmd, "20");
     if (!cmd_run(cmd)) return 1;
   }
+  build_x11(cmd, &procs);
 
   compiler(cmd);
   cflags(cmd, true);
@@ -231,7 +232,6 @@ int main(int argc, char** argv)
   ldflags(cmd);
 
   if (!cmd_run(cmd, .async = &procs)) return 1;
-  build_x11(cmd, &procs);
 
   //build_debug(cmd);
 
