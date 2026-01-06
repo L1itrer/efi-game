@@ -152,6 +152,7 @@ void game_update_level(GameState* state, Keyboard* keys)
   }
   state->level.currCorrectBoxes = correctCounter;
   state->gameWon = (correctCounter == state->level.requiredBoxesCount);
+  Glevels_data[state->currLevelIndex].completed = state->gameWon;
 }
 
 
@@ -175,11 +176,13 @@ void game_update_level_select(GameState* state, Keyboard* keyboard)
   if (keyboard->key[KEY_UP]) 
   {
     state->currSelection = ((state->currSelection-1)+count) % count;
+    state->currLevelIndex = state->currSelection;
     return;
   }
   if (keyboard->key[KEY_DOWN])
   {
     state->currSelection = ((state->currSelection+1)+count) % count;
+    state->currLevelIndex = state->currSelection;
     return;
   }
   if (keyboard->key[KEY_ENTER] || keyboard->key[KEY_CHAR_Z])
@@ -589,14 +592,121 @@ void game_draw_select(Backbuffer* backbuffer, GameState* state)
     }
     else c = COLOR_WHITE;
 
+    f32 y = (f32)i*50.0f;
     draw_text(
       font,
       backbuffer,
       Glevels_data[i].name,
       50.0f,
-      yStart + (f32)i*50.0f,
+      yStart + y,
       c
     );
+  if (Glevels_data[i].completed)
+  {
+    draw_rectangle(
+     backbuffer,
+     30, yStart + y-15,
+     10,10,
+     COLOR_GREEN
+    );
+  }
+  }
+  i32 xCorner = 400;
+  i32 yCorner = (i32)yStart;
+
+
+  i32 tileWidthPixels = TILE_WIDTH_PIXELS/2;
+  i32 tileHeightPixels = TILE_HEIGHT_PIXELS/2;
+
+  draw_rectangle_lines(
+    backbuffer,
+    400, yStart,
+    tileWidthPixels * TILE_COUNT_WIDTH,
+    tileHeightPixels * TILE_COUNT_HEIGHT,
+    COLOR_WHITE, 2
+  );
+
+  // TODO: factor out drawing of preview
+
+  state->level = Glevels_data[state->currLevelIndex];
+  for (i32 y = 0;y < TILE_COUNT_HEIGHT;++y)
+  {
+    for (i32 x = 0;x < TILE_COUNT_WIDTH;++x)
+    {
+      i32 pixelX = xCorner + x * tileWidthPixels + 1;
+      i32 pixelY = yCorner + y * tileHeightPixels + 1;
+      i32 cord = x + y * TILE_COUNT_WIDTH;
+      Tile tile = state->level.tiles[cord];
+      switch (tile.tileKindEnum)
+      {
+        case TILE_NORM:
+          {
+            // draw the tile
+            draw_rectangle(
+              backbuffer,
+              pixelX+1,
+              pixelY+1,
+              tileWidthPixels-1,
+              tileHeightPixels-1,
+              COLOR_TILE
+            );
+            // draw box
+            if (tile.hasBox)
+            {
+              draw_rectangle(
+                backbuffer,
+                pixelX + BOX_DIFF/2,
+                pixelY + BOX_DIFF/2,
+                BOX_WIDTH_PIXELS/2,
+                BOX_HIEGHT_PIXELDS/2,
+                COLOR_BOX
+              );
+            }
+            break;
+          }
+        case TILE_WALL:
+          {
+            draw_rectangle(backbuffer, pixelX, pixelY, tileWidthPixels, tileHeightPixels, COLOR_WALL);
+            break;
+          }
+        case TILE_CORR:
+          {
+            if (tile.hasBox)
+            {
+              // draw green tile
+              Color color = COLOR_GREEN;
+              draw_rectangle(
+                backbuffer,
+                pixelX+1,
+                pixelY+1,
+                tileWidthPixels-1,
+                tileHeightPixels-1,
+                color
+              );
+              draw_rectangle(
+                backbuffer,
+                pixelX + BOX_DIFF/2,
+                pixelY + BOX_DIFF/2,
+                BOX_WIDTH_PIXELS/2,
+                BOX_HIEGHT_PIXELDS/2,
+                COLOR_BOX
+              );
+            }
+            else
+            {
+              draw_rectangle(
+                backbuffer,
+                pixelX+1,
+                pixelY+1,
+                tileWidthPixels-1,
+                tileHeightPixels-1,
+                COLOR_RED
+              );
+            }
+            break;
+          }
+      }
+    }
   }
 }
 

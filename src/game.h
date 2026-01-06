@@ -180,6 +180,7 @@ typedef struct GameLevel{
   i32 playerY;
   i32 currCorrectBoxes;
   i32 requiredBoxesCount;
+  bool32 completed;
 }GameLevel;
 
 typedef struct GameState{
