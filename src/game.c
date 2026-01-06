@@ -164,6 +164,11 @@ void game_switch_level(GameState* state, u32 levelIdx)
   state->currLevelIndex = (i32)levelIdx;
 }
 
+void game_switch_credits(GameState* state)
+{
+  state->gameSceneEnum = SCENE_CREDITS;
+}
+
 void game_update_level_select(GameState* state, Keyboard* keyboard)
 {
   i32 count = Arrlen(Glevels_data);
@@ -200,7 +205,7 @@ void game_menu_quit(GameState* state)
 
 #define MENU_OPTIONS \
 MENU_DEF("Level select", game_switch_select) \
-MENU_DEF("Credits", game_switch_select) \
+MENU_DEF("Credits", game_switch_credits) \
 MENU_DEF("Quit", game_menu_quit) \
 
 const char* GmenuOptionNames[] = {
@@ -237,6 +242,14 @@ void game_update_menu(GameState* state, Keyboard* keyboard)
   }
 }
 
+void game_update_credits(GameState* state, Keyboard* keyboard)
+{
+  if (keyboard->key[KEY_CHAR_Q])
+  {
+    state->gameSceneEnum = SCENE_MENU;
+  }
+}
+
 void game_update(GameState* state, Keyboard* keyboard, f64 dt)
 {
   state->fixedUpdateCounter += dt;
@@ -256,6 +269,11 @@ void game_update(GameState* state, Keyboard* keyboard, f64 dt)
     case SCENE_MENU:
       {
         game_update_menu(state, keyboard);
+        break;
+      }
+    case SCENE_CREDITS:
+      {
+        game_update_credits(state, keyboard);
         break;
       }
   }
@@ -640,6 +658,39 @@ void game_draw_menu(Backbuffer* backbuffer, GameState* state)
   }
 }
 
+void game_draw_credits(Backbuffer* backbuffer)
+{
+  clear_background(backbuffer, 0x18, 0x18, 0x18);
+  f32 yStart = 200.0f;
+  f32 xStart = 100.0f;
+  Font* font = &GrobotoFont;
+  Color color = COLOR_WHITE;
+  draw_text(
+    font, backbuffer,
+    "Game by Litrer",
+    xStart, yStart,
+    color
+  );
+  draw_text(
+    font, backbuffer,
+    "Acknoledgements:",
+    xStart, yStart+100.0f,
+    color
+  );
+  draw_text(
+    font, backbuffer,
+    "Sean Berret - stb_truetype.h",
+    xStart, yStart+150.0f,
+    color
+  );
+  draw_text(
+    font, backbuffer,
+    "Jeff Roberts - stb_sprintf.h",
+    xStart, yStart+200.0f,
+    color
+  );
+}
+
 void game_draw(Backbuffer* backbuffer, GameState* state)
 {
   switch (state->gameSceneEnum)
@@ -657,6 +708,11 @@ void game_draw(Backbuffer* backbuffer, GameState* state)
     case SCENE_MENU:
       {
         game_draw_menu(backbuffer, state);
+        break;
+      }
+    case SCENE_CREDITS:
+      {
+        game_draw_credits(backbuffer);
         break;
       }
   }

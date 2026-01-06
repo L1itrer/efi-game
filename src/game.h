@@ -147,6 +147,7 @@ typedef enum GameScene{
   SCENE_LEVEL,
   SCENE_MENU,
   SCENE_LEVEL_SELECT,
+  SCENE_CREDITS,
   __SCENE_COUNT
 }GameScene;
 
