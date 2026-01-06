@@ -590,6 +590,14 @@ void game_draw_menu(Backbuffer* backbuffer, GameState* state)
   f32 xStart = 200.0f;
   u32 count = Arrlen(GmenuOptionNames);
   i32 factor = state->playerAnim * 3;
+
+  draw_text(
+    font, backbuffer,
+    "Sokoban(like)",
+    xStart,
+    yStart-200.0f,
+    COLOR_WHITE
+  );
   for (u32 i = 0;i < count;++i)
   {
     Color c;
