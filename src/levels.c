@@ -35,6 +35,22 @@ GameLevel Glevels_data[] = {
     .requiredBoxesCount = 3,
     .name = "Less humble middles",
   },
+  (GameLevel){
+    .tiles = {
+      {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, 
+      {TILE_WALL, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_WALL, 0}, 
+      {TILE_WALL, 0}, {TILE_CORR, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_WALL, 0}, 
+      {TILE_WALL, 0}, {TILE_NORM, 1}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_WALL, 0}, 
+      {TILE_WALL, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_WALL, 0}, 
+      {TILE_WALL, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_WALL, 0}, 
+      {TILE_WALL, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_NORM, 0}, {TILE_WALL, 0}, 
+      {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, {TILE_WALL, 0}, 
+    },
+    .playerX = 1,
+    .playerY = 6,
+    .requiredBoxesCount = 1,
+    .name = "test"
+  },
 };
 
 // level template

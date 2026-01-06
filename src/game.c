@@ -799,6 +799,12 @@ void game_draw_credits(Backbuffer* backbuffer)
     xStart, yStart+200.0f,
     color
   );
+  draw_text(
+    &Groboto_smallFont, backbuffer,
+    "[q] to go back to main menu",
+    xStart, yStart+300.0f,
+    color
+  );
 }
 
 void game_draw(Backbuffer* backbuffer, GameState* state)
