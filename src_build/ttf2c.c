@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
   nob_sb_appendf(&sb, "CharData %s_cdata[] = {\n", fontName);
   for (int i = 0;i < CHAR_COUNT;++i)
   {
-    nob_sb_appendf(&sb, "{.x0 = %d, .y0 = %d, .x1 = %d, .y1 = %d, .xoff = %f, .yoff = %f, .xadvance = %f},\n",
+    nob_sb_appendf(&sb, "{.x0 = %d, .y0 = %d, .x1 = %d, .y1 = %d, .xoff = %ff, .yoff = %ff, .xadvance = %ff},\n",
                    cdata[i].x0, cdata[i].y0, cdata[i].x1, cdata[i].y1,
                    cdata[i].xoff, cdata[i].yoff, cdata[i].xadvance
                    );
